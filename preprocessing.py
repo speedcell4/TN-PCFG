@@ -34,9 +34,11 @@ def create_dataset(file_name):
             pos_array.append(pos)
             gold_trees.append(factorize(tree))
 
-    return {'word': word_array,
-            'pos': pos_array,
-            'gold_tree': gold_trees}
+    return {
+        'word': word_array,
+        'pos': pos_array,
+        'gold_tree': gold_trees,
+    }
 
 
 if __name__ == '__main__':

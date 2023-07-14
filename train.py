@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     config_path = Path(args.conf if args.conf else args2.load_from_dir + "/config.yaml")
     config_name = config_path.stem
-    args.save_dir = args.save_dir + "/{}".format(config_name)
+    args.save_dir = args.save_dir + f"/{config_name}"
 
     try:
         command = Train()
