@@ -46,7 +46,7 @@ fastNLP 目前提供了如下的 Loader
 
 __all__ = [
     'Loader',
-    
+
     'CLSBaseLoader',
     'YelpFullLoader',
     'YelpPolarityLoader',
@@ -58,7 +58,7 @@ __all__ = [
     "ChnSentiCorpLoader",
     "THUCNewsLoader",
     "WeiboSenti100kLoader",
-    
+
     'ConllLoader',
     'Conll2003Loader',
     'Conll2003NERLoader',
@@ -67,12 +67,12 @@ __all__ = [
     "MsraNERLoader",
     "PeopleDailyNERLoader",
     "WeiboNERLoader",
-    
+
     'CSVLoader',
     'JsonLoader',
-    
+
     'CWSLoader',
-    
+
     'MNLILoader',
     "QuoraLoader",
     "SNLILoader",
@@ -81,22 +81,42 @@ __all__ = [
     "CNXNLILoader",
     "BQCorpusLoader",
     "LCQMCLoader",
-    
+
     "CoReferenceLoader",
 
     "CMRC2018Loader"
 ]
-from .classification import CLSBaseLoader, YelpFullLoader, YelpPolarityLoader, AGsNewsLoader, IMDBLoader, \
-    SSTLoader, SST2Loader, DBPediaLoader, \
-    ChnSentiCorpLoader, THUCNewsLoader, WeiboSenti100kLoader
-from .conll import ConllLoader, Conll2003Loader, Conll2003NERLoader, OntoNotesNERLoader, CTBLoader
-from .conll import MsraNERLoader, PeopleDailyNERLoader, WeiboNERLoader
+
+from .classification import AGsNewsLoader
+from .classification import ChnSentiCorpLoader
+from .classification import CLSBaseLoader
+from .classification import DBPediaLoader
+from .classification import IMDBLoader
+from .classification import SST2Loader
+from .classification import SSTLoader
+from .classification import THUCNewsLoader
+from .classification import WeiboSenti100kLoader
+from .classification import YelpFullLoader
+from .classification import YelpPolarityLoader
+from .conll import Conll2003Loader
+from .conll import Conll2003NERLoader
+from .conll import ConllLoader
+from .conll import CTBLoader
+from .conll import MsraNERLoader
+from .conll import OntoNotesNERLoader
+from .conll import PeopleDailyNERLoader
+from .conll import WeiboNERLoader
 from .coreference import CoReferenceLoader
 from .csv import CSVLoader
 from .cws import CWSLoader
 from .json import JsonLoader
 from .loader import Loader
-from .matching import MNLILoader, QuoraLoader, SNLILoader, QNLILoader, RTELoader, CNXNLILoader, BQCorpusLoader, \
-    LCQMCLoader
+from .matching import BQCorpusLoader
+from .matching import CNXNLILoader
+from .matching import LCQMCLoader
+from .matching import MNLILoader
+from .matching import QNLILoader
+from .matching import QuoraLoader
+from .matching import RTELoader
+from .matching import SNLILoader
 from .qa import CMRC2018Loader
-

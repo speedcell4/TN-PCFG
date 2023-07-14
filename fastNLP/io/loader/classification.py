@@ -14,7 +14,6 @@ __all__ = [
     "WeiboSenti100kLoader"
 ]
 
-
 import glob
 import os
 import random
@@ -23,9 +22,9 @@ import time
 import warnings
 
 from .loader import Loader
+from ...core._logger import logger
 from ...core.dataset import DataSet
 from ...core.instance import Instance
-from ...core._logger import logger
 
 
 class CLSBaseLoader(Loader):
@@ -174,6 +173,7 @@ class IMDBLoader(CLSBaseLoader):
        "...", "..."
 
     """
+
     def __init__(self):
         super().__init__(sep='\t')
 
@@ -387,6 +387,7 @@ class ChnSentiCorpLoader(Loader):
         "..."
 
     """
+
     def __init__(self):
         super().__init__()
 

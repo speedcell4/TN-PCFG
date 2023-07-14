@@ -5,7 +5,6 @@ __all__ = [
 ]
 
 import collections
-
 import numpy as np
 
 from fastNLP.core.vocabulary import Vocabulary
@@ -60,7 +59,7 @@ class CoReferencePipe(Pipe):
         :return:
         """
         genres = {g: i for i, g in enumerate(["bc", "bn", "mz", "nw", "pt", "tc", "wb"])}
-        vocab = Vocabulary().from_dataset(*data_bundle.datasets.values(), field_name= Const.RAW_WORDS(3))
+        vocab = Vocabulary().from_dataset(*data_bundle.datasets.values(), field_name=Const.RAW_WORDS(3))
         vocab.build_vocab()
         word2id = vocab.word2idx
         data_bundle.set_vocab(vocab, Const.INPUTS(0))
@@ -68,7 +67,7 @@ class CoReferencePipe(Pipe):
             char_dict = get_char_dict(self.config.char_path)
         else:
             char_set = set()
-            for i,w in enumerate(word2id):
+            for i, w in enumerate(word2id):
                 if i < 2:
                     continue
                 for c in w:
@@ -82,23 +81,24 @@ class CoReferencePipe(Pipe):
             ds.apply(lambda x: genres[x[Const.RAW_WORDS(0)][:2]], new_field_name=Const.INPUTS(0))
 
             # speaker_ids_np
-            ds.apply(lambda x: speaker2numpy(x[Const.RAW_WORDS(1)], self.config.max_sentences, is_train=name == 'train'),
-                     new_field_name=Const.INPUTS(1))
+            ds.apply(
+                lambda x: speaker2numpy(x[Const.RAW_WORDS(1)], self.config.max_sentences, is_train=name == 'train'),
+                new_field_name=Const.INPUTS(1))
 
             # sentences
-            ds.rename_field(Const.RAW_WORDS(3),Const.INPUTS(2))
+            ds.rename_field(Const.RAW_WORDS(3), Const.INPUTS(2))
 
             # doc_np
             ds.apply(lambda x: doc2numpy(x[Const.INPUTS(2)], word2id, char_dict, max(self.config.filter),
-                                                    self.config.max_sentences, is_train=name == 'train')[0],
+                                         self.config.max_sentences, is_train=name == 'train')[0],
                      new_field_name=Const.INPUTS(3))
             # char_index
             ds.apply(lambda x: doc2numpy(x[Const.INPUTS(2)], word2id, char_dict, max(self.config.filter),
-                                                    self.config.max_sentences, is_train=name == 'train')[1],
+                                         self.config.max_sentences, is_train=name == 'train')[1],
                      new_field_name=Const.CHAR_INPUT)
             # seq len
             ds.apply(lambda x: doc2numpy(x[Const.INPUTS(2)], word2id, char_dict, max(self.config.filter),
-                                                    self.config.max_sentences, is_train=name == 'train')[2],
+                                         self.config.max_sentences, is_train=name == 'train')[2],
                      new_field_name=Const.INPUT_LEN)
 
             # clusters
@@ -106,7 +106,8 @@ class CoReferencePipe(Pipe):
 
             ds.set_ignore_type(Const.TARGET)
             ds.set_padder(Const.TARGET, None)
-            ds.set_input(Const.INPUTS(0), Const.INPUTS(1), Const.INPUTS(2), Const.INPUTS(3), Const.CHAR_INPUT, Const.INPUT_LEN)
+            ds.set_input(Const.INPUTS(0), Const.INPUTS(1), Const.INPUTS(2), Const.INPUTS(3), Const.CHAR_INPUT,
+                         Const.INPUT_LEN)
             ds.set_target(Const.TARGET)
 
         return data_bundle
@@ -129,13 +130,14 @@ def doc2numpy(doc, word2id, chardict, max_filter, max_sentences, is_train):
             doc_np[i][j] = docvec[i][j]
     return doc_np, char_index, length
 
-def _doc2vec(doc,word2id,char_dict,max_filter,max_sentences,is_train):
+
+def _doc2vec(doc, word2id, char_dict, max_filter, max_sentences, is_train):
     max_len = 0
     max_word_length = 0
     docvex = []
     length = []
     if is_train:
-        sent_num = min(max_sentences,len(doc))
+        sent_num = min(max_sentences, len(doc))
     else:
         sent_num = len(doc)
 
@@ -144,9 +146,9 @@ def _doc2vec(doc,word2id,char_dict,max_filter,max_sentences,is_train):
         length.append(len(sent))
         if (len(sent) > max_len):
             max_len = len(sent)
-        sent_vec =[]
-        for j,word in enumerate(sent):
-            if len(word)>max_word_length:
+        sent_vec = []
+        for j, word in enumerate(sent):
+            if len(word) > max_word_length:
                 max_word_length = len(word)
             if word in word2id:
                 sent_vec.append(word2id[word])
@@ -154,25 +156,28 @@ def _doc2vec(doc,word2id,char_dict,max_filter,max_sentences,is_train):
                 sent_vec.append(word2id["UNK"])
         docvex.append(sent_vec)
 
-    char_index = np.zeros((sent_num, max_len, max_word_length),dtype=int)
+    char_index = np.zeros((sent_num, max_len, max_word_length), dtype=int)
     for i in range(sent_num):
         sent = doc[i]
-        for j,word in enumerate(sent):
+        for j, word in enumerate(sent):
             char_index[i, j, :len(word)] = [char_dict[c] for c in word]
 
-    return docvex,char_index,length,max_len
+    return docvex, char_index, length, max_len
 
-def speaker2numpy(speakers_raw,max_sentences,is_train):
-    if is_train and len(speakers_raw)> max_sentences:
+
+def speaker2numpy(speakers_raw, max_sentences, is_train):
+    if is_train and len(speakers_raw) > max_sentences:
         speakers_raw = speakers_raw[0:max_sentences]
     speakers = flatten(speakers_raw)
     speaker_dict = {s: i for i, s in enumerate(set(speakers))}
     speaker_ids = np.array([speaker_dict[s] for s in speakers])
     return speaker_ids
 
+
 # 展平
 def flatten(l):
     return [item for sublist in l for item in sublist]
+
 
 def get_char_dict(path):
     vocab = ["<UNK>"]

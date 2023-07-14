@@ -62,7 +62,7 @@ __all__ = [
     "TensorboardCallback",
     "WarmupCallback",
     "SaveModelCallback",
-    
+
     "CallbackException",
     "EarlyStopError",
     "CheckPointCallback"
@@ -70,15 +70,14 @@ __all__ = [
 
 import os
 import sys
-from copy import deepcopy
-
 import torch
+from copy import deepcopy
 
 from .utils import _save_model
 
 try:
     from tensorboardX import SummaryWriter
-    
+
     tensorboardX_flag = True
 except:
     tensorboardX_flag = False
@@ -108,7 +107,7 @@ class Callback(object):
     这是Callback的基类，所有的callback必须继承自这个类
 
     """
-    
+
     def __init__(self):
         super(Callback, self).__init__()
         self._trainer = None  # 在Trainer内部被重新赋值
@@ -123,53 +122,53 @@ class Callback(object):
         该属性可以通过self.trainer获取到，一般情况下不需要使用这个属性。
         """
         return self._trainer
-    
+
     @property
     def step(self):
         r"""当前运行到的step, 范围为[1, self.n_steps+1)"""
         return self._trainer.step
-    
+
     @property
     def n_steps(self):
         r"""Trainer一共会采多少个batch。当Trainer中update_every设置为非1的值时，该值不等于update的次数"""
         return self._trainer.n_steps
-    
+
     @property
     def batch_size(self):
         r"""train和evaluate时的batch_size为多大"""
         return self._trainer.batch_size
-    
+
     @property
     def epoch(self):
         r"""当前运行的epoch数，范围是[1, self.n_epochs+1)"""
         return self._trainer.epoch
-    
+
     @property
     def n_epochs(self):
         r"""一共会运行多少个epoch"""
         return self._trainer.n_epochs
-    
+
     @property
     def optimizer(self):
         r"""初始化Trainer时传递的Optimizer"""
         return self._trainer.optimizer
-    
+
     @property
     def model(self):
         r"""正在被Trainer训练的模型"""
         return self._trainer.model
-    
+
     @property
     def pbar(self):
         r"""如果在Callback中需要打印内容，请使用self.pbar.write(str)。否则可能出现命令行显示效果不太好的问题。在
         on_train_begin(), on_train_end(), on_exception()中请不要使用该属性，通过print输出即可。"""
         return self._trainer.pbar
-    
+
     @property
     def update_every(self):
         r"""Trainer中的模型多少次反向传播才进行一次梯度更新，在Trainer初始化时传入的。"""
         return self._trainer.update_every
-    
+
     @property
     def batch_per_epoch(self):
         r"""每个epoch一共有多少个batch，只有在on_epoch_begin之后才能调用该属性。"""
@@ -194,7 +193,7 @@ class Callback(object):
         :return:
         """
         pass
-    
+
     def on_epoch_begin(self):
         r"""
         在每个epoch开始之前调用一次
@@ -202,7 +201,7 @@ class Callback(object):
         :return:
         """
         pass
-    
+
     def on_batch_begin(self, batch_x, batch_y, indices):
         r"""
         每次采集到一个batch的数据则调用一次。这里对batch_x或batch_y删除添加内容是可以影响到Trainer中内容的。所以在这一步
@@ -215,7 +214,7 @@ class Callback(object):
         :return:
         """
         pass
-    
+
     def on_loss_begin(self, batch_y, predict_y):
         r"""
         在计算loss前调用，即这里修改batch_y或predict_y的值是可以影响到loss计算的。
@@ -225,7 +224,7 @@ class Callback(object):
         :return:
         """
         pass
-    
+
     def on_backward_begin(self, loss):
         r"""
         在loss得到之后，但在反向传播之前。可能可以进行loss是否为NaN的检查。
@@ -234,7 +233,7 @@ class Callback(object):
         :return:
         """
         pass
-    
+
     def on_backward_end(self):
         r"""
         反向梯度传播已完成，但由于update_every的设置，可能并不是每一次调用都有梯度。到这一步，还没有更新参数。
@@ -242,7 +241,7 @@ class Callback(object):
         :return:
         """
         pass
-    
+
     def on_step_end(self):
         r"""
         到这里模型的参数已经按照梯度更新。但可能受update_every影响，并不是每次都更新了。
@@ -250,14 +249,14 @@ class Callback(object):
         :return:
         """
         pass
-    
+
     def on_batch_end(self):
         r"""
         这一步与on_step_end是紧接着的。只是为了对称性加上了这一步。
 
         """
         pass
-    
+
     def on_valid_begin(self):
         r"""
         如果Trainer中设置了验证，则发生验证前会调用该函数
@@ -265,7 +264,7 @@ class Callback(object):
         :return:
         """
         pass
-    
+
     def on_valid_end(self, eval_result, metric_key, optimizer, is_better_eval):
         r"""
         每次执行验证集的evaluation后会调用。
@@ -278,19 +277,19 @@ class Callback(object):
         :return:
         """
         pass
-    
+
     def on_epoch_end(self):
         r"""
         每个epoch结束将会调用该方法
         """
         pass
-    
+
     def on_train_end(self):
         r"""
         训练结束，调用该方法
         """
         pass
-    
+
     def on_exception(self, exception):
         r"""
         当训练过程出现异常，会触发该方法
@@ -305,7 +304,7 @@ def _transfer(func):
     :param func:
     :return:
     """
-    
+
     def wrapper(manager, *arg):
         returns = []
         for callback in manager.callbacks:
@@ -313,7 +312,7 @@ def _transfer(func):
                 continue
             returns.append(getattr(callback, func.__name__)(*arg))
         return returns
-    
+
     return wrapper
 
 
@@ -321,6 +320,7 @@ class CallbackManager(Callback):
     r"""
     内部使用的Callback管理类
     """
+
     def __init__(self, env, callbacks=None):
         r"""
 
@@ -354,39 +354,39 @@ class CallbackManager(Callback):
     @_transfer
     def on_train_begin(self):
         pass
-    
+
     @_transfer
     def on_epoch_begin(self):
         pass
-    
+
     @_transfer
     def on_batch_begin(self, batch_x, batch_y, indices):
         pass
-    
+
     @_transfer
     def on_loss_begin(self, batch_y, predict_y):
         pass
-    
+
     @_transfer
     def on_backward_begin(self, loss):
         pass
-    
+
     @_transfer
     def on_backward_end(self):
         pass
-    
+
     @_transfer
     def on_step_end(self):
         pass
-    
+
     @_transfer
     def on_batch_end(self):
         pass
-    
+
     @_transfer
     def on_valid_begin(self):
         pass
-    
+
     @_transfer
     def on_valid_end(self, eval_result, metric_key, optimizer, is_better_eval):
         pass
@@ -394,15 +394,15 @@ class CallbackManager(Callback):
     @_transfer
     def on_validation(self):
         pass
-    
+
     @_transfer
     def on_epoch_end(self):
         pass
-    
+
     @_transfer
     def on_train_end(self):
         pass
-    
+
     @_transfer
     def on_exception(self, exception):
         pass
@@ -439,7 +439,7 @@ class GradientClipCallback(Callback):
     r"""
     每次backward前，将parameter的gradient clip到某个范围。
     """
-    
+
     def __init__(self, parameters=None, clip_value=1, clip_type='norm'):
         r"""
         
@@ -456,7 +456,7 @@ class GradientClipCallback(Callback):
                     大于clip_value的gradient被赋值为clip_value.
         """
         super().__init__()
-        
+
         from torch import nn
         if clip_type == 'norm':
             self.clip_fun = nn.utils.clip_grad_norm_
@@ -469,9 +469,9 @@ class GradientClipCallback(Callback):
         else:
             self.parameters = None
         self.clip_value = clip_value
-    
+
     def on_backward_end(self):
-        if self.step%self.update_every==0:
+        if self.step % self.update_every == 0:
             if self.parameters is None:
                 if getattr(self.trainer, 'fp16', ''):
                     _check_fp16()
@@ -486,7 +486,7 @@ class EarlyStopCallback(Callback):
     r"""
     多少个epoch没有变好就停止训练，相关类 :class:`~fastNLP.core.callback.EarlyStopError`
     """
-    
+
     def __init__(self, patience):
         r"""
         
@@ -495,7 +495,7 @@ class EarlyStopCallback(Callback):
         super(EarlyStopCallback, self).__init__()
         self.patience = patience
         self.wait = 0
-    
+
     def on_valid_end(self, eval_result, metric_key, optimizer, is_better_eval):
         if not is_better_eval:
             # current result is getting worse
@@ -505,7 +505,7 @@ class EarlyStopCallback(Callback):
                 self.wait += 1
         else:
             self.wait = 0
-    
+
     def on_exception(self, exception):
         if isinstance(exception, EarlyStopError):
             logger.info("Early Stopping triggered in epoch {}!".format(self.epoch))
@@ -536,7 +536,7 @@ class FitlogCallback(Callback):
         self.datasets = {}
         self.testers = {}
         self._log_exception = log_exception
-        assert isinstance(log_loss_every, int) and log_loss_every>=0
+        assert isinstance(log_loss_every, int) and log_loss_every >= 0
         if tester is not None:
             if isinstance(tester, dict):
                 for name, test in tester.items():
@@ -557,7 +557,7 @@ class FitlogCallback(Callback):
             self.datasets['data-test'] = data
         elif data is not None:
             raise TypeError("data receives dict[DataSet] or DataSet object.")
-        
+
         self.verbose = verbose
         self._log_loss_every = log_loss_every
         self._avg_loss = 0
@@ -565,7 +565,7 @@ class FitlogCallback(Callback):
     def on_train_begin(self):
         if (len(self.datasets) > 0 or len(self.testers) > 0) and self.trainer.dev_data is None:
             raise RuntimeError("Trainer has no dev data, you cannot pass extra data to do evaluation.")
-        
+
         if len(self.datasets) > 0:
             for key, data in self.datasets.items():
                 tester = Tester(data=data, model=self.model,
@@ -576,12 +576,13 @@ class FitlogCallback(Callback):
                                 sampler=self.trainer.kwargs.get('test_sampler', None))
                 self.testers[key] = tester
         fitlog.add_progress(total_steps=self.n_steps)
-    
+
     def on_backward_begin(self, loss):
-        if self._log_loss_every>0:
+        if self._log_loss_every > 0:
             self._avg_loss += loss.item()
-            if self.step%self._log_loss_every==0:
-                fitlog.add_loss(self._avg_loss/self._log_loss_every*self.update_every, name='loss', step=self.step, epoch=self.epoch)
+            if self.step % self._log_loss_every == 0:
+                fitlog.add_loss(self._avg_loss / self._log_loss_every * self.update_every, name='loss', step=self.step,
+                                epoch=self.epoch)
                 self._avg_loss = 0
 
     def on_valid_end(self, eval_result, metric_key, optimizer, better_result):
@@ -607,7 +608,7 @@ class FitlogCallback(Callback):
 
     def on_train_end(self):
         fitlog.finish()
-    
+
     def on_exception(self, exception):
         fitlog.finish(status=1)
         if self._log_exception:
@@ -674,11 +675,12 @@ class EvaluateCallback(Callback):
                     self.logger.error("Exception happens when evaluate on DataSet named `{}`.".format(key))
                     raise e
 
+
 class LRScheduler(Callback):
     r"""
     对PyTorch LR Scheduler的包装以使得其可以被Trainer所使用
     """
-    
+
     def __init__(self, lr_scheduler):
         r"""
         :param torch.optim.lr_scheduler._LRScheduler lr_scheduler: PyTorch的lr_scheduler
@@ -689,7 +691,7 @@ class LRScheduler(Callback):
             self.scheduler = lr_scheduler
         else:
             raise ValueError(f"Expect torch.optim.lr_scheduler for LRScheduler. Got {type(lr_scheduler)}.")
-    
+
     def on_epoch_end(self):
         self.scheduler.step(self.epoch)
 
@@ -698,23 +700,23 @@ class ControlC(Callback):
     r"""
     检测到 control+C 时的反馈
     """
-    
+
     @staticmethod
     def quit_all():
         import sys
         sys.exit(0)  # 直接退出程序
-    
+
     def __init__(self, quit_and_do, action=quit_all):
         r"""
         :param bool quit_and_do: 若为True,则检测到control+C 进行后续操作（默认值为：直接退出程序）；否则只退出Trainer。
         """
-        
+
         super(ControlC, self).__init__()
         if type(quit_and_do) != bool:
             raise ValueError("In KeyBoardInterrupt, quit_and_do arguemnt must be a bool.")
         self.quit_and_do = quit_and_do
         self.action = action
-    
+
     def on_exception(self, exception):
         if isinstance(exception, KeyboardInterrupt):
             if self.quit_and_do is True:
@@ -727,11 +729,11 @@ class ControlC(Callback):
 
 class SmoothValue(object):
     r"""work for LRFinder"""
-    
+
     def __init__(self, beta: float):
         self.beta, self.n, self.mov_avg = beta, 0, 0
         self.smooth = None
-    
+
     def add_value(self, val: float) -> None:
         r"""Add `val` to calculate updated smoothed value."""
         self.n += 1
@@ -743,7 +745,7 @@ class LRFinder(Callback):
     r"""
     用第一个 epoch 找最佳的学习率，从第二个epoch开始应用它
     """
-    
+
     def __init__(self, start_lr=1e-6, end_lr=10):
         r"""
         
@@ -752,7 +754,7 @@ class LRFinder(Callback):
         """
         super(LRFinder, self).__init__()
         self.start_lr, self.end_lr = start_lr, end_lr
-        
+
         self.stop = False
         self.best_loss = 0.
         self.best_lr = None
@@ -765,11 +767,11 @@ class LRFinder(Callback):
     def lr_gen(self):
         scale = (self.end_lr - self.start_lr) / self.batch_per_epoch
         return (self.start_lr + scale * (step + 1) for step in range(self.batch_per_epoch))
-    
+
     @property
     def num_it(self):
         return self.batch_per_epoch
-    
+
     def on_epoch_begin(self):
         if self.epoch == 1:  # first epoch
             self.opt = self.trainer.optimizer  # pytorch optimizer
@@ -777,7 +779,7 @@ class LRFinder(Callback):
             # save model
             torch.save(self.model.state_dict(), 'tmp')
             self.find = True
-    
+
     def on_backward_begin(self, loss):
         if self.find:
             if torch.isnan(loss) or self.stop is True:
@@ -789,7 +791,7 @@ class LRFinder(Callback):
             if self.best_loss == 0. or self.smooth_value.smooth < self.best_loss:
                 self.best_loss = self.smooth_value.smooth
                 self.best_lr = self.opt.param_groups[0]["lr"]
-    
+
     def on_batch_end(self, *args):
         if self.find:
             lr = next(self.lr_gen, None)
@@ -798,7 +800,7 @@ class LRFinder(Callback):
                 return
             self.opt.param_groups[0]["lr"] = lr
             # self.loader.load_pytorch(self.trainer.model, "tmp")
-    
+
     def on_epoch_end(self):
         if self.epoch == 1:  # first epoch
             self.opt.param_groups[0]["lr"] = self.best_lr
@@ -822,7 +824,7 @@ class TensorboardCallback(Callback):
         或者使用和 fastNLP 高度配合的 fitlog（参见 :doc:`/tutorials/extend_3_fitlog` ）。
         
     """
-    
+
     def __init__(self, *options):
         super(TensorboardCallback, self).__init__()
         args = {"model", "loss", "metric"}
@@ -832,7 +834,7 @@ class TensorboardCallback(Callback):
         self.options = options
         self._summary_writer = None
         self.graph_added = False
-    
+
     def on_train_begin(self):
         save_dir = self.trainer.save_path
         if save_dir is None:
@@ -843,7 +845,7 @@ class TensorboardCallback(Callback):
             self._summary_writer = SummaryWriter(path)
         else:
             self._summary_writer = None
-    
+
     def on_batch_begin(self, batch_x, batch_y, indices):
         if "model" in self.options and self.graph_added is False:
             # tesorboardX 这里有大bug，暂时没法画模型图
@@ -853,11 +855,11 @@ class TensorboardCallback(Callback):
             # args = args[0] if len(args) == 1 else args
             # self._summary_writer.add_graph(self.trainer.model, torch.zeros(32, 2))
             self.graph_added = True
-    
+
     def on_backward_begin(self, loss):
         if "loss" in self.options and self._summary_writer:
             self._summary_writer.add_scalar("loss", loss.item(), global_step=self.trainer.step)
-        
+
         if "model" in self.options and self._summary_writer:
             for name, param in self.trainer.model.named_parameters():
                 if param.requires_grad:
@@ -865,19 +867,19 @@ class TensorboardCallback(Callback):
                     # self._summary_writer.add_scalar(name + "_std", param.std(), global_step=self.trainer.step)
                     self._summary_writer.add_scalar(name + "_grad_mean", param.grad.mean(),
                                                     global_step=self.trainer.step)
-    
+
     def on_valid_end(self, eval_result, metric_key, optimizer, is_better_eval):
         if "metric" in self.options and self._summary_writer:
             for name, metric in eval_result.items():
                 for metric_key, metric_val in metric.items():
                     self._summary_writer.add_scalar("valid_{}_{}".format(name, metric_key), metric_val,
                                                     global_step=self.trainer.step)
-    
+
     def on_train_end(self):
         if self._summary_writer:
             self._summary_writer.close()
             del self._summary_writer
-    
+
     def on_exception(self, exception):
         if hasattr(self, "_summary_writer"):
             self._summary_writer.close()
@@ -948,7 +950,7 @@ class CheckPointCallback(Callback):
                 model = model.module
             model.load_state_dict(states['model'])
             self.optimizer.load_state_dict(states['optimizer'])
-            self.trainer.epoch = states['epoch'] + 1 # 因为是结束储存的，所以需要从下一个epoch开始
+            self.trainer.epoch = states['epoch'] + 1  # 因为是结束储存的，所以需要从下一个epoch开始
             self.trainer.step = states['step']
             if 'best_dev_epoch' in states:
                 self.trainer.best_dev_perf = states['best_dev_perf']
@@ -968,7 +970,7 @@ class CheckPointCallback(Callback):
         model = self.model
         if _model_contains_inner_module(model):
             model = model.module
-        states['model'] = {name:param.cpu() for name, param in model.state_dict().items()}
+        states['model'] = {name: param.cpu() for name, param in model.state_dict().items()}
         states['optimizer'] = self.optimizer.state_dict()
         states['epoch'] = self.epoch
         states['step'] = self.step
@@ -1001,6 +1003,7 @@ class WarmupCallback(Callback):
     r"""
     learning rate按照一定的速率从0上升到设置的learning rate。
     """
+
     def __init__(self, warmup=0.1, schedule='constant'):
         r"""
         
@@ -1022,28 +1025,28 @@ class WarmupCallback(Callback):
             raise RuntimeError("Only support 'linear', 'constant'.")
 
     def _get_constant_lr(self, progress):
-        if progress<self.warmup:
-            return progress/self.warmup
+        if progress < self.warmup:
+            return progress / self.warmup
         return 1
 
     def _get_linear_lr(self, progress):
-        if progress<self.warmup:
-            return progress/self.warmup
+        if progress < self.warmup:
+            return progress / self.warmup
         return max((progress - 1.) / (self.warmup - 1.), 0.)
 
     def on_train_begin(self):
-        self.t_steps = (len(self.trainer.train_data) // (self.batch_size*self.update_every) +
-                            int(len(self.trainer.train_data) % (self.batch_size*self.update_every)!= 0)) * self.n_epochs
-        if self.warmup>1:
-            self.warmup = self.warmup/self.t_steps
+        self.t_steps = (len(self.trainer.train_data) // (self.batch_size * self.update_every) +
+                        int(len(self.trainer.train_data) % (self.batch_size * self.update_every) != 0)) * self.n_epochs
+        if self.warmup > 1:
+            self.warmup = self.warmup / self.t_steps
         self.t_steps = max(2, self.t_steps)  # 不能小于2
         # 获取param_group的初始learning rate
         for group in self.optimizer.param_groups:
             self.initial_lrs.append(group['lr'])
 
     def on_backward_end(self):
-        if self.step%self.update_every==0:
-            progress = (self.step/self.update_every)/self.t_steps
+        if self.step % self.update_every == 0:
+            progress = (self.step / self.update_every) / self.t_steps
             for lr, group in zip(self.initial_lrs, self.optimizer.param_groups):
                 group['lr'] = lr * self.get_lr(progress)
 
@@ -1060,6 +1063,7 @@ class SaveModelCallback(Callback):
             -2019-07-03-15-10-00
                 -epoch:0_step:20_{metric_key}:{evaluate_performance}.pt   # metric是给定的metric_key, evaluate_perfomance是性能
     """
+
     def __init__(self, save_dir, top=3, only_param=False, save_on_exception=False):
         r"""
         
@@ -1093,17 +1097,17 @@ class SaveModelCallback(Callback):
         # 返回save的模型pair与删除的模型pair. pair中第一个元素是metric的值，第二个元素是模型的名称
         index = -1
         for _pair in self._ordered_save_models:
-            if _pair[0]>=pair[0] and self.trainer.increase_better:
+            if _pair[0] >= pair[0] and self.trainer.increase_better:
                 break
-            if not self.trainer.increase_better and _pair[0]<=pair[0]:
+            if not self.trainer.increase_better and _pair[0] <= pair[0]:
                 break
             index += 1
         save_pair = None
-        if len(self._ordered_save_models)<self.top or (len(self._ordered_save_models)>=self.top and index!=-1):
+        if len(self._ordered_save_models) < self.top or (len(self._ordered_save_models) >= self.top and index != -1):
             save_pair = pair
-            self._ordered_save_models.insert(index+1, pair)
+            self._ordered_save_models.insert(index + 1, pair)
         delete_pair = None
-        if len(self._ordered_save_models)>self.top:
+        if len(self._ordered_save_models) > self.top:
             delete_pair = self._ordered_save_models.pop(0)
         return save_pair, delete_pair
 
@@ -1133,7 +1137,7 @@ class CallbackException(BaseException):
     r"""
    当需要通过callback跳出训练的时候可以通过抛出CallbackException并在on_exception中捕获这个值。
    """
-    
+
     def __init__(self, msg):
         r"""
         
@@ -1147,7 +1151,7 @@ class EarlyStopError(CallbackException):
     用于EarlyStop时从Trainer训练循环中跳出。
     
     """
-    
+
     def __init__(self, msg):
         super(EarlyStopError, self).__init__(msg)
 
@@ -1157,6 +1161,7 @@ class EchoCallback(Callback):
     用于测试分布式训练
     
     """
+
     def __init__(self, name, out=sys.stdout):
         super(EchoCallback, self).__init__()
         self.name = name
@@ -1184,8 +1189,8 @@ class _TesterCallback(Callback):
     def on_valid_begin(self):
         cur_score = self.tester.test()
         eval_str = "Evaluation at Epoch {}/{}. Step:{}/{}. - {}".format(
-                    self.epoch, self.n_epochs, self.step, self.n_steps,
-                    self.tester._format_eval_results(cur_score))
+            self.epoch, self.n_epochs, self.step, self.n_steps,
+            self.tester._format_eval_results(cur_score))
         self.logger.info(eval_str)
         is_better = self.compare_better(cur_score)
         if is_better:

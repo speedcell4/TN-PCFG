@@ -36,4 +36,3 @@ class CSVLoader(Loader):
                                    sep=self.sep, dropna=self.dropna):
             ds.append(Instance(**data))
         return ds
-

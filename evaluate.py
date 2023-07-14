@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import os
-from parser.cmds import Evaluate
-import torch
-from easydict import EasyDict as edict
-import yaml
 import click
+import os
+import torch
+import yaml
+from easydict import EasyDict as edict
+
+from parser.cmds import Evaluate
 
 
 @click.command()

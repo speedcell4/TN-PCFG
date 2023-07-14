@@ -13,14 +13,13 @@ __all__ = [
 
 import os
 import re
+import requests
 import shutil
 import tempfile
 from pathlib import Path
-from urllib.parse import urlparse
-
-import requests
 from requests import HTTPError
 from tqdm import tqdm
+from urllib.parse import urlparse
 
 from ..core import logger
 
@@ -146,7 +145,7 @@ PRETRAIN_MAP = {'elmo': PRETRAINED_ELMO_MODEL_DIR,
 #  用于扩展fastNLP的下载
 FASTNLP_EXTEND_DATASET_URL = 'fastnlp_dataset_url.txt'
 FASTNLP_EXTEND_EMBEDDING_URL = {'elmo': 'fastnlp_elmo_url.txt',
-                                'bert':'fastnlp_bert_url.txt',
+                                'bert': 'fastnlp_bert_url.txt',
                                 'static': 'fastnlp_static_url.txt',
                                 'gpt2': 'fastnlp_gpt2_url.txt',
                                 'roberta': 'fastnlp_roberta_url.txt'
@@ -291,7 +290,8 @@ def _get_embedding_url(embed_type, name):
     else:
         raise KeyError(f"There is no {embed_type}. Only supports bert, elmo, static, gpt2, roberta")
 
-def _read_extend_url_file(filename, name)->str:
+
+def _read_extend_url_file(filename, name) -> str:
     r"""
     filename中的内容使用制表符隔开，第一列是名称，第二列是下载的url地址
 
@@ -311,6 +311,7 @@ def _read_extend_url_file(filename, name)->str:
                         if name == parts[0]:
                             return parts[1]
     return None
+
 
 def _get_dataset_url(name):
     r"""
@@ -475,7 +476,7 @@ def untar_gz_file(file: Path, to: Path):
         tar.extractall(to)
 
 
-def ungzip_file(file: str, to: str, filename:str):
+def ungzip_file(file: str, to: str, filename: str):
     import gzip
 
     g_file = gzip.GzipFile(file)

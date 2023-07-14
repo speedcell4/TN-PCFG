@@ -7,13 +7,12 @@ __all__ = [
 ]
 
 import math
-
 import torch
 import torch.nn.functional as F
 from torch import nn
 
-from .utils import initial_parameter
 from .decoder.seq2seq_state import TransformerState
+from .utils import initial_parameter
 
 
 class DotAttention(nn.Module):
@@ -50,6 +49,7 @@ class MultiHeadAttention(nn.Module):
     Attention is all you need中提到的多头注意力
 
     """
+
     def __init__(self, d_model: int = 512, n_head: int = 8, dropout: float = 0.0, layer_idx: int = None):
         super(MultiHeadAttention, self).__init__()
         self.d_model = d_model

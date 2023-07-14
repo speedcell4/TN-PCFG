@@ -1,13 +1,13 @@
-from nltk import Tree
 import argparse
 import pickle
+from nltk import Tree
 
 
 def factorize(tree):
     def track(tree, i):
         label = tree.label()
         if len(tree) == 1 and not isinstance(tree[0], Tree):
-            return (i+1 if label is not None else i), []
+            return (i + 1 if label is not None else i), []
         j, spans = i, []
         for child in tree:
             j, s = track(child, j)
@@ -17,6 +17,7 @@ def factorize(tree):
         elif j > i:
             spans = [[i, j, 'NULL']] + spans
         return j, spans
+
     return track(tree, 0)[1]
 
 
@@ -35,10 +36,7 @@ def create_dataset(file_name):
 
     return {'word': word_array,
             'pos': pos_array,
-            'gold_tree':gold_trees}
-
-
-
+            'gold_tree': gold_trees}
 
 
 if __name__ == '__main__':
@@ -53,24 +51,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     result = create_dataset(args.train_file)
-    with open(args.cache_path+"train.pickle", "wb") as f:
+    with open(args.cache_path + "train.pickle", "wb") as f:
         pickle.dump(result, f)
 
     result = create_dataset(args.val_file)
-    with open(args.cache_path+"val.pickle", "wb") as f:
+    with open(args.cache_path + "val.pickle", "wb") as f:
         pickle.dump(result, f)
 
     result = create_dataset(args.test_file)
-    with open(args.cache_path+"test.pickle", "wb") as f:
+    with open(args.cache_path + "test.pickle", "wb") as f:
         pickle.dump(result, f)
-
-
-
-
-
-
-
-
-
-
-

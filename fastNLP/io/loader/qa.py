@@ -3,10 +3,10 @@ r"""
 
 """
 
-
-from . import Loader
 import json
-from ...core import DataSet, Instance
+from . import Loader
+from ...core import DataSet
+from ...core import Instance
 
 __all__ = ['CMRC2018Loader']
 
@@ -38,6 +38,7 @@ class CMRC2018Loader(Loader):
     其中answer_starts是从0开始的index。例如"我来自a复旦大学？"，其中"复"的开始index为4。另外"Russell评价说"中的说的index为9, 因为
     英文和数字都直接按照character计量的。
     """
+
     def __init__(self):
         super().__init__()
 
@@ -60,7 +61,7 @@ class CMRC2018Loader(Loader):
                         answers.append(an['text'])
                         answer_starts.append(an['answer_start'])
                     ds.append(Instance(title=title, context=context, question=question, answers=answers,
-                                       answer_starts=answer_starts,id=id))
+                                       answer_starts=answer_starts, id=id))
         return ds
 
     def download(self) -> str:
@@ -71,4 +72,3 @@ class CMRC2018Loader(Loader):
         """
         output_dir = self._get_dataset_path('cmrc2018')
         return output_dir
-

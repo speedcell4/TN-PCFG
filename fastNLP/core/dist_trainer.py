@@ -4,27 +4,29 @@ r"""
 1. 在代码中调用 DistTrainer，类似 Trainer，传入模型和数据等等参数
 2. 在命令行中，将 python your_script.py 替换为 python -m torch.distributed.launch --nproc_per_node=N your_script.py
 """
+import contextlib
 import logging
 import os
 import time
-from datetime import datetime
-
-import contextlib
+import time
 import torch
 import torch.cuda
 import torch.distributed as dist
 import torch.optim
-from torch.serialization import default_restore_location
+from datetime import datetime
 from pkg_resources import parse_version
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.serialization import default_restore_location
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-import time
 
-from ._logger import logger, init_logger_dist
-from .batch import DataSetIter, BatchIter
-from .callback import DistCallbackManager, CallbackException
+from ._logger import init_logger_dist
+from ._logger import logger
+from .batch import BatchIter
+from .batch import DataSetIter
 from .callback import _TesterCallback
+from .callback import CallbackException
+from .callback import DistCallbackManager
 from .dataset import DataSet
 from .losses import _prepare_losser
 from .optimizer import Optimizer
@@ -43,6 +45,7 @@ __all__ = [
     'DistTrainer',
 ]
 
+
 def get_local_rank():
     r"""
     返回当前进程的 local rank， 0 到 N-1 ，N为当前分布式总进程数
@@ -54,7 +57,7 @@ def get_local_rank():
     parser.add_argument('--local_rank', type=int)
     args, _ = parser.parse_known_args()
     if 'local_rank' in args and args.local_rank:
-        os.environ['LOCAL_RANK'] = str(args.local_rank) # for multiple calls for this function
+        os.environ['LOCAL_RANK'] = str(args.local_rank)  # for multiple calls for this function
         return args.local_rank
     raise RuntimeError('Please use "python -m torch.distributed.launch --nproc_per_node=N train_script.py')
 
@@ -66,6 +69,7 @@ class DistTrainer():
     Note: 使用分布式 Trainer 时会同时有多个进程执行训练代码。因此将单进程的训练代码改为多进程之前，
     请仔细检查，确保训练代码中的同步和互斥操作能正确执行（如模型保持，打印日志等）
     """
+
     def __init__(self, train_data, model, optimizer=None, loss=None,
                  callbacks_all=None, callbacks_master=None,
                  batch_size_per_gpu=8, n_epochs=1,
@@ -121,7 +125,7 @@ class DistTrainer():
         init_logger_dist()
 
         self.world_size = dist.get_world_size()
-        self.rank = dist.get_rank() # unique id for each process
+        self.rank = dist.get_rank()  # unique id for each process
 
         self.train_data = train_data
         self.batch_size_per_gpu = int(batch_size_per_gpu)
@@ -148,18 +152,19 @@ class DistTrainer():
 
         # init fp16, must before DataParallel init
         if len(self.fp16):
-            assert isinstance(self.fp16, str), "Please set Apex AMP optimization level selected in ['O0', 'O1', 'O2', 'O3']"
+            assert isinstance(self.fp16,
+                              str), "Please set Apex AMP optimization level selected in ['O0', 'O1', 'O2', 'O3']"
             _check_fp16()
             assert device == 'cuda', "Amp requires cuda device"
             model, optimizer = amp.initialize(model, optimizer, opt_level=self.fp16)
 
         # init DataParallel
-        if parse_version(torch.__version__)>=parse_version('1.1'):
+        if parse_version(torch.__version__) >= parse_version('1.1'):
             self.ddp_model = DDP(model, device_ids=[self.local_rank],
-                             output_device=self.local_rank, find_unused_parameters=True)
+                                 output_device=self.local_rank, find_unused_parameters=True)
         else:
             self.ddp_model = DDP(model, device_ids=[self.local_rank],
-                             output_device=self.local_rank)
+                                 output_device=self.local_rank)
         self.model = self.ddp_model.module
 
         self.optimizer = optimizer
@@ -190,11 +195,11 @@ class DistTrainer():
         self.logger = logger
         self.logger.info("Setup Distributed Trainer")
         self.logger.warning("Process pid: {}, rank: {}, local rank: {}, device: {}, fp16: {}".format(
-                        os.getpid(), self.rank, self.local_rank, self.device, self.fp16 if self.fp16 else False))
+            os.getpid(), self.rank, self.local_rank, self.device, self.fp16 if self.fp16 else False))
         self.logger.info("Num of processes: {}".format(self.world_size))
         self.logger.info("Use device: {}".format(device))
         self.logger.info("Training with fp16: {}, optimization level: {}".format(
-                        len(self.fp16) > 0, self.fp16 if self.fp16 else None))
+            len(self.fp16) > 0, self.fp16 if self.fp16 else None))
 
     def _maybe_no_sync(self):
         """
@@ -259,21 +264,21 @@ class DistTrainer():
         """
         try:
             self.logger.info("###### Training epochs started ######")
-            self.logger.info('Total epochs: %d'% self.n_epochs)
-            self.logger.info('Total steps: %d'% self.n_steps)
-            self.logger.info('Num instances per GPU: %d'% self.batch_size_per_gpu)
+            self.logger.info('Total epochs: %d' % self.n_epochs)
+            self.logger.info('Total steps: %d' % self.n_steps)
+            self.logger.info('Num instances per GPU: %d' % self.batch_size_per_gpu)
             self.logger.info('Num of steps per update: %d' % self.update_every)
-            self.logger.info('Total batch_size: %d'%
+            self.logger.info('Total batch_size: %d' %
                              (self.batch_size_per_gpu * dist.get_world_size() * self.update_every))
-            self.logger.info('Total num of samples: %d'% len(self.train_data))
+            self.logger.info('Total num of samples: %d' % len(self.train_data))
             self.logger.info("Num of callbacks for all workers: {}".format(
-                                len(self.callback_manager.callbacks_all)))
+                len(self.callback_manager.callbacks_all)))
             self.logger.info("Num of callbacks for master workers: {}".format(
-                                len(self.callback_manager.callbacks_master)))
+                len(self.callback_manager.callbacks_master)))
             self.logger.info("Callbacks for all workers: {}".format(
-                    [repr(cb) for cb in self.callback_manager.callbacks_all]))
+                [repr(cb) for cb in self.callback_manager.callbacks_all]))
             self.logger.info("Callbacks for master workers: {}".format(
-                    [repr(cb) for cb in self.callback_manager.callbacks_master]))
+                [repr(cb) for cb in self.callback_manager.callbacks_master]))
 
             start_time = time.time()
             results = {}
@@ -299,7 +304,7 @@ class DistTrainer():
 
             results['seconds'] = round(time.time() - start_time, 2)
             self.logger.info("###### Train finished ######")
-            self.logger.info('Total train time: {} seconds.'. format(results['seconds']))
+            self.logger.info('Total train time: {} seconds.'.format(results['seconds']))
             if load_best_model and self.cp_save_path and len(self.test_manager.callbacks):
                 self.load_check_point(self._best_save_name())
         finally:
@@ -317,7 +322,7 @@ class DistTrainer():
         self.step = 0
         self.epoch = 0
         self.pbar = inner_tqdm(total=self.n_steps, postfix='loss:{0:<6.5f}',
-                        leave=False, dynamic_ncols=True, disable=not self.is_master)
+                               leave=False, dynamic_ncols=True, disable=not self.is_master)
         pbar = self.pbar
         avg_loss = 0
         data_iterator = self.data_iterator
@@ -379,6 +384,7 @@ class DistTrainer():
         # =============== epochs end =================== #
         pbar.close()
         self.pbar = None
+
     # ============ tqdm end ============== #
 
     def _update(self):

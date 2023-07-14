@@ -5,11 +5,12 @@ __all__ = [
 ]
 
 import os
-from typing import Union, Dict
+from typing import Dict
+from typing import Union
 
+from .json import JsonLoader
 from ..data_bundle import DataBundle
 from ..utils import check_loader_paths
-from .json import JsonLoader
 
 
 class ExtCNNDMLoader(JsonLoader):

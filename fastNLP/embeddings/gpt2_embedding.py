@@ -8,22 +8,22 @@ __all__ = [
     "GPT2WordPieceEncoder"
 ]
 
+import numpy as np
+import torch
 import warnings
+from collections import OrderedDict
 from functools import partial
 from itertools import chain
-from collections import OrderedDict
-
-import torch
 from torch import nn
-import numpy as np
 
 from .contextual_embedding import ContextualEmbedding
 from ..core import logger
 from ..core.utils import _get_model_device
 from ..core.vocabulary import Vocabulary
 from ..io.file_utils import PRETRAINED_BERT_MODEL_DIR
+from ..modules.encoder.gpt2 import GPT2LMHeadModel
+from ..modules.encoder.gpt2 import GPT2Model
 from ..modules.tokenizer import GPT2Tokenizer
-from ..modules.encoder.gpt2 import GPT2LMHeadModel, GPT2Model
 
 
 class GPT2Embedding(ContextualEmbedding):
@@ -85,9 +85,9 @@ class GPT2Embedding(ContextualEmbedding):
         truncate_embed = kwargs.get('truncate_embed', True)
         min_freq = kwargs.get('min_freq', 1)
 
-        self.lm_loss =language_model
+        self.lm_loss = language_model
         self.model = _GPT2Model(model_dir_or_name=model_dir_or_name, vocab=vocab, layers=layers,
-                                    pool_method=pool_method, auto_truncate=auto_truncate, language_model=language_model,
+                                pool_method=pool_method, auto_truncate=auto_truncate, language_model=language_model,
                                 only_use_pretrain_bpe=only_use_pretrain_bpe, truncate_embed=truncate_embed,
                                 min_freq=min_freq)
 
@@ -153,7 +153,7 @@ class GPT2WordPieceEncoder(nn.Module):
     """
 
     def __init__(self, model_dir_or_name: str = 'en', layers: str = '-1',
-                 word_dropout=0, dropout=0, requires_grad: bool = True, language_model:bool=False):
+                 word_dropout=0, dropout=0, requires_grad: bool = True, language_model: bool = False):
         """
 
         :param str model_dir_or_name: 模型所在目录或者模型的名称。
@@ -165,7 +165,8 @@ class GPT2WordPieceEncoder(nn.Module):
         """
         super().__init__()
 
-        self.model = _GPT2WordPieceModel(model_dir_or_name=model_dir_or_name, layers=layers, language_model=language_model)
+        self.model = _GPT2WordPieceModel(model_dir_or_name=model_dir_or_name, layers=layers,
+                                         language_model=language_model)
         self._wordpiece_pad_index = self.model._wordpiece_pad_index
         self._embed_size = len(self.model.layers) * self.model.encoder.config.n_embd
         self.requires_grad = requires_grad
@@ -198,7 +199,7 @@ class GPT2WordPieceEncoder(nn.Module):
         :return:
         """
         self.model.index_datasets(*datasets, field_name=field_name, add_endoftext=add_endoftext,
-                                 add_prefix_space=add_prefix_space)
+                                  add_prefix_space=add_prefix_space)
 
     def forward(self, word_pieces, token_type_ids=None):
         """
@@ -244,7 +245,7 @@ class GPT2WordPieceEncoder(nn.Module):
         :param float length_penalty: 惩罚过长的句子
         :return: list[str]
         """
-        if len(text)==0:
+        if len(text) == 0:
             word_pieces = torch.LongTensor([[self.model.tokenizer.bos_index]])
             start_idx = 1
         else:
@@ -256,30 +257,31 @@ class GPT2WordPieceEncoder(nn.Module):
         device = _get_model_device(self)
         word_pieces = word_pieces.to(device)
         outputs = self.model.encoder.generate(input_ids=word_pieces,
-                        max_length=max_len,
-                        do_sample=do_sample,
-                        num_beams=num_beams,
-                        temperature=temperature,
-                        top_k=top_k,
-                        top_p=top_p,
-                        repetition_penalty=repetition_penalty,
-                        bos_token_id=self.model.tokenizer.bos_index,
-                        pad_token_id=self.model.tokenizer.eos_index,  # 使用<|endoftext|>代替pad
-                        eos_token_ids=self.model.tokenizer.eos_index,
-                        length_penalty=length_penalty).squeeze(0)
+                                              max_length=max_len,
+                                              do_sample=do_sample,
+                                              num_beams=num_beams,
+                                              temperature=temperature,
+                                              top_k=top_k,
+                                              top_p=top_p,
+                                              repetition_penalty=repetition_penalty,
+                                              bos_token_id=self.model.tokenizer.bos_index,
+                                              pad_token_id=self.model.tokenizer.eos_index,  # 使用<|endoftext|>代替pad
+                                              eos_token_ids=self.model.tokenizer.eos_index,
+                                              length_penalty=length_penalty).squeeze(0)
 
         output_strs = []
-        if outputs.dim()==1:
+        if outputs.dim() == 1:
             outputs = outputs[None]
         outputs = outputs[:, start_idx:]
         for i in range(len(outputs)):
-            str_ = self.model.tokenizer.convert_tokens_to_string(self.model.tokenizer.convert_ids_to_tokens(outputs[i].tolist()))
+            str_ = self.model.tokenizer.convert_tokens_to_string(
+                self.model.tokenizer.convert_ids_to_tokens(outputs[i].tolist()))
             output_strs.append(str_)
 
         return output_strs
 
     def generate(self, word_pieces=None, max_len=40, do_sample=True, num_beams=1, temperature=1, top_k=50, top_p=1.0,
-                    repetition_penalty=1.0, length_penalty=1.0):
+                 repetition_penalty=1.0, length_penalty=1.0):
         """
 
         :param torch.LongTensor,None word_pieces: 如果传入tensor，shape应该为batch_size x start_len; 如果传入None，会随机生成。
@@ -314,7 +316,7 @@ class GPT2WordPieceEncoder(nn.Module):
 
 
 class _GPT2Model(nn.Module):
-    def __init__(self, model_dir_or_name, vocab, layers,  pool_method='first', auto_truncate=True, language_model=False,
+    def __init__(self, model_dir_or_name, vocab, layers, pool_method='first', auto_truncate=True, language_model=False,
                  only_use_pretrain_bpe=False, min_freq=1, truncate_embed=False):
         super().__init__()
 
@@ -340,7 +342,7 @@ class _GPT2Model(nn.Module):
                                                        f"a GPT2 model with {encoder_layer_number} layers."
             else:
                 assert layer <= encoder_layer_number, f"The layer index:{layer} is out of scope for " \
-                                                     f"a GPT2 model with {encoder_layer_number} layers."
+                                                      f"a GPT2 model with {encoder_layer_number} layers."
 
         assert pool_method in ('avg', 'max', 'first', 'last')
         self.pool_method = pool_method
@@ -364,7 +366,8 @@ class _GPT2Model(nn.Module):
             word_pieces.extend(self.tokenzier.tokenize(word, add_prefix_space=True))
             if len(word_pieces) == 1:
                 if not vocab._is_word_no_create_entry(word):  # 如果是train中的值, 但是却没有找到
-                    if index not in (vocab.unknown_idx, vocab.padding_idx) and word_pieces[0] == '<|endoftext|>':  # 说明这个词不在原始的word里面
+                    if index not in (vocab.unknown_idx, vocab.padding_idx) and word_pieces[
+                        0] == '<|endoftext|>':  # 说明这个词不在原始的word里面
                         if vocab.word_count[word] >= min_freq and not vocab._is_word_no_create_entry(
                                 word) and not only_use_pretrain_bpe:  # 出现次数大于这个次数才新增
                             word_piece_dict[word] = 1  # 新增一个值
@@ -375,11 +378,12 @@ class _GPT2Model(nn.Module):
                 word_piece_dict[word_piece] = 1
             found_count += 1
 
-        if unsegment_count>0:
-            if only_use_pretrain_bpe or new_add_to_bpe_vocab==0:
+        if unsegment_count > 0:
+            if only_use_pretrain_bpe or new_add_to_bpe_vocab == 0:
                 logger.info(f"{unsegment_count} words are unsegmented.")
             else:
-                logger.info(f"{unsegment_count} words are unsegmented. Among them, {new_add_to_bpe_vocab} added to the BPE vocab.")
+                logger.info(
+                    f"{unsegment_count} words are unsegmented. Among them, {new_add_to_bpe_vocab} added to the BPE vocab.")
 
         original_embed = self.encoder.get_input_embeddings().weight
         # 特殊词汇要特殊处理
@@ -473,14 +477,15 @@ class _GPT2Model(nn.Module):
         if self.lm_loss:
             gpt2_outputs = self.encoder(word_pieces, token_type_ids=None, attention_mask=attn_masks, labels=word_labels,
                                         output_attentions=False)
-            gpt2_outputs, self._lm_loss_value = gpt2_outputs[-1], gpt2_outputs[0]  # n_layers x batch_size x max_len x hidden_size
+            gpt2_outputs, self._lm_loss_value = gpt2_outputs[-1], gpt2_outputs[
+                0]  # n_layers x batch_size x max_len x hidden_size
         else:
             gpt2_outputs = self.encoder(word_pieces, token_type_ids=None, attention_mask=attn_masks,
                                         output_attentions=False)[-1]
         outputs = gpt2_outputs[-1].new_zeros(len(self.layers), batch_size, max_word_len,
                                              gpt2_outputs[-1].size(-1))
 
-        batch_word_pieces_cum_length = batch_word_pieces_length.new_zeros(batch_size, max_word_len+1)
+        batch_word_pieces_cum_length = batch_word_pieces_length.new_zeros(batch_size, max_word_len + 1)
         batch_word_pieces_cum_length[:, 1:] = batch_word_pieces_length.cumsum(dim=-1)  # batch_size x max_len
 
         if self.pool_method == 'first':
@@ -539,7 +544,7 @@ class _GPT2WordPieceModel(nn.Module):
 
     """
 
-    def __init__(self, model_dir_or_name: str, layers: str = '-1', language_model: bool=False):
+    def __init__(self, model_dir_or_name: str, layers: str = '-1', language_model: bool = False):
         super().__init__()
 
         self.tokenizer = GPT2Tokenizer.from_pretrained(model_dir_or_name)
@@ -563,13 +568,14 @@ class _GPT2WordPieceModel(nn.Module):
         for layer in self.layers:
             if layer < 0:
                 assert -layer <= encoder_layer_number, f"The layer index:{layer} is out of scope for " \
-                    f"a gpt2 model with {encoder_layer_number} layers."
+                                                       f"a gpt2 model with {encoder_layer_number} layers."
             else:
                 assert layer <= encoder_layer_number, f"The layer index:{layer} is out of scope for " \
-                    f"a gpt2 model with {encoder_layer_number} layers."
+                                                      f"a gpt2 model with {encoder_layer_number} layers."
 
         self._endoftext_index = self.tokenizer.encoder.get('<|endoftext|>')
-        self._wordpiece_pad_index = self.tokenizer.encoder.get('<|endoftext|>') # 原来并没有pad，使用这个值替代一下。这个pad值并不重要，因为是从左到右计算的
+        self._wordpiece_pad_index = self.tokenizer.encoder.get(
+            '<|endoftext|>')  # 原来并没有pad，使用这个值替代一下。这个pad值并不重要，因为是从左到右计算的
         self._max_position_embeddings = self.encoder.config.max_position_embeddings
 
     def index_datasets(self, *datasets, field_name, add_endoftext=False, add_prefix_space=True):
@@ -634,11 +640,12 @@ class _GPT2WordPieceModel(nn.Module):
             labels = word_pieces.clone()
             labels = labels.masked_fill(labels.eq(self._wordpiece_pad_index), -100)
             gpt_outputs = self.encoder(word_pieces, token_type_ids=token_type_ids, attention_mask=attn_masks,
-                                        output_attentions=False, labels=labels)
-            gpt_outputs, self._lm_loss_value = gpt_outputs[-1], gpt_outputs[0]  # n_layers x batch_size x max_len x hidden_size
+                                       output_attentions=False, labels=labels)
+            gpt_outputs, self._lm_loss_value = gpt_outputs[-1], gpt_outputs[
+                0]  # n_layers x batch_size x max_len x hidden_size
         else:
             gpt_outputs = self.encoder(word_pieces, token_type_ids=token_type_ids, attention_mask=attn_masks,
-                                        output_attentions=False)
+                                       output_attentions=False)
             gpt_outputs = gpt_outputs[-1]
         # output_layers = [self.layers]  # len(self.layers) x batch_size x max_word_piece_length x hidden_size
         outputs = gpt_outputs[0].new_zeros((len(self.layers), batch_size, max_len, gpt_outputs[0].size(-1)))
@@ -653,4 +660,3 @@ class _GPT2WordPieceModel(nn.Module):
         :return:
         """
         return self._lm_loss_value
-

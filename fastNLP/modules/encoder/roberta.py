@@ -1,4 +1,3 @@
-
 r"""undocumented
 这个页面的代码很大程度上参考(复制粘贴)了https://github.com/huggingface/pytorch-pretrained-BERT的代码， 如果你发现该代码对你
     有用，也请引用一下他们。
@@ -11,10 +10,12 @@ __all__ = [
 import torch
 import torch.nn as nn
 
-from .bert import BertEmbeddings, BertModel, BertConfig
 from fastNLP.io.file_utils import _get_file_name_base_on_postfix
-from ...io.file_utils import _get_roberta_dir
+from .bert import BertConfig
+from .bert import BertEmbeddings
+from .bert import BertModel
 from ...core import logger
+from ...io.file_utils import _get_roberta_dir
 
 PRETRAINED_ROBERTA_POSITIONAL_EMBEDDINGS_SIZES = {
     "roberta-base": 512,
@@ -135,11 +136,11 @@ class RobertaModel(BertModel):
         start_prefix = ""
         model_to_load = model
         if not hasattr(model, 'roberta') and any(
-            s.startswith('roberta') for s in state_dict.keys()
+                s.startswith('roberta') for s in state_dict.keys()
         ):
             start_prefix = 'roberta.'
         if hasattr(model, 'roberta') and not any(
-            s.startswith('roberta') for s in state_dict.keys()
+                s.startswith('roberta') for s in state_dict.keys()
         ):
             model_to_load = getattr(model, 'roberta')
 
@@ -178,5 +179,3 @@ class RobertaModel(BertModel):
         logger.info(f"Load pre-trained RoBERTa parameters from file {weights_path}.")
 
         return model
-
-

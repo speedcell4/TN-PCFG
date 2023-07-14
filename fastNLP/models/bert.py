@@ -31,9 +31,8 @@ __all__ = [
     "BertForQuestionAnswering"
 ]
 
-import warnings
-
 import torch
+import warnings
 from torch import nn
 
 from .base_model import BaseModel
@@ -47,7 +46,8 @@ class BertForSequenceClassification(BaseModel):
     BERT model for classification.
 
     """
-    def __init__(self, embed: BertEmbedding, num_labels: int=2, dropout=0.1):
+
+    def __init__(self, embed: BertEmbedding, num_labels: int = 2, dropout=0.1):
         r"""
         
         :param fastNLP.embeddings.BertEmbedding embed: 下游模型的编码器(encoder).
@@ -99,7 +99,8 @@ class BertForSentenceMatching(BaseModel):
     BERT model for sentence matching.
 
     """
-    def __init__(self, embed: BertEmbedding, num_labels: int=2, dropout=0.1):
+
+    def __init__(self, embed: BertEmbedding, num_labels: int = 2, dropout=0.1):
         r"""
         
         :param fastNLP.embeddings.BertEmbedding embed: 下游模型的编码器(encoder).
@@ -146,6 +147,7 @@ class BertForMultipleChoice(BaseModel):
     BERT model for multiple choice.
 
     """
+
     def __init__(self, embed: BertEmbedding, num_choices=2, dropout=0.1):
         r"""
         
@@ -196,6 +198,7 @@ class BertForTokenClassification(BaseModel):
     BERT model for token classification.
 
     """
+
     def __init__(self, embed: BertEmbedding, num_labels, dropout=0.1):
         r"""
         
@@ -242,6 +245,7 @@ class BertForQuestionAnswering(BaseModel):
     用于做Q&A的Bert模型，如果是Squad2.0请将BertEmbedding的include_cls_sep设置为True，Squad1.0或CMRC则设置为False
 
     """
+
     def __init__(self, embed: BertEmbedding):
         r"""
         

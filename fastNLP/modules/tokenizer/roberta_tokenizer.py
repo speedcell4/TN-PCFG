@@ -7,8 +7,9 @@ __all__ = [
 ]
 
 import json
-from .gpt2_tokenizer import GPT2Tokenizer
+
 from fastNLP.io.file_utils import _get_file_name_base_on_postfix
+from .gpt2_tokenizer import GPT2Tokenizer
 from ...io.file_utils import _get_roberta_dir
 
 PRETRAINED_ROBERTA_POSITIONAL_EMBEDDINGS_SIZES = {
@@ -22,25 +23,24 @@ PRETRAINED_ROBERTA_POSITIONAL_EMBEDDINGS_SIZES = {
 
 
 class RobertaTokenizer(GPT2Tokenizer):
-
     vocab_files_names = {
         "vocab_file": "vocab.json",
         "merges_file": "merges.txt",
     }
 
     def __init__(
-        self,
-        vocab_file,
-        merges_file,
-        errors="replace",
-        bos_token="<s>",
-        eos_token="</s>",
-        sep_token="</s>",
-        cls_token="<s>",
-        unk_token="<unk>",
-        pad_token="<pad>",
-        mask_token="<mask>",
-        **kwargs
+            self,
+            vocab_file,
+            merges_file,
+            errors="replace",
+            bos_token="<s>",
+            eos_token="</s>",
+            sep_token="</s>",
+            cls_token="<s>",
+            unk_token="<unk>",
+            pad_token="<pad>",
+            mask_token="<mask>",
+            **kwargs
     ):
         super().__init__(
             vocab_file=vocab_file,
@@ -85,8 +85,10 @@ class RobertaTokenizer(GPT2Tokenizer):
         if 'vocab_file' in kwargs:  # 如果指定了词表则用指定词表
             init_kwargs['vocab_file'] = kwargs['vocab_file']
         else:
-            init_kwargs['vocab_file'] = _get_file_name_base_on_postfix(model_dir, RobertaTokenizer.vocab_files_names['vocab_file'])
-        init_kwargs['merges_file'] = _get_file_name_base_on_postfix(model_dir, RobertaTokenizer.vocab_files_names['merges_file'])
+            init_kwargs['vocab_file'] = _get_file_name_base_on_postfix(model_dir,
+                                                                       RobertaTokenizer.vocab_files_names['vocab_file'])
+        init_kwargs['merges_file'] = _get_file_name_base_on_postfix(model_dir,
+                                                                    RobertaTokenizer.vocab_files_names['merges_file'])
 
         init_inputs = init_kwargs.pop("init_inputs", ())
         # Instantiate tokenizer.
@@ -99,4 +101,3 @@ class RobertaTokenizer(GPT2Tokenizer):
             )
 
         return tokenizer
-

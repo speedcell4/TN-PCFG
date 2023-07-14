@@ -6,11 +6,12 @@ __all__ = [
     'DataBundle',
 ]
 
-from typing import Union, List
+from typing import List
+from typing import Union
 
+from ..core._logger import logger
 from ..core.dataset import DataSet
 from ..core.vocabulary import Vocabulary
-from ..core._logger import logger
 
 
 class DataBundle:
@@ -355,7 +356,8 @@ class DataBundle:
         res = {}
         for name, dataset in self.datasets.items():
             if dataset.has_field(field_name=field_name):
-                res[name] = dataset.apply_field_more(func=func, field_name=field_name, modify_fields=modify_fields, **kwargs)
+                res[name] = dataset.apply_field_more(func=func, field_name=field_name, modify_fields=modify_fields,
+                                                     **kwargs)
             elif not ignore_miss_dataset:
                 raise KeyError(f"{field_name} not found DataSet:{name} .")
         return res

@@ -1,7 +1,11 @@
 import torch
 import torch.nn as nn
+
 from parser.modules.res import ResLayer
-from ..pcfgs.tdpcfg import TDPCFG, Fastest_TDPCFG, Triton_TDPCFG
+from ..pcfgs.tdpcfg import Fastest_TDPCFG
+from ..pcfgs.tdpcfg import TDPCFG
+from ..pcfgs.tdpcfg import Triton_TDPCFG
+
 
 class TNPCFG(nn.Module):
     def __init__(self, args, dataset):
@@ -23,19 +27,18 @@ class TNPCFG(nn.Module):
                                       ResLayer(self.s_dim, self.s_dim),
                                       nn.Linear(self.s_dim, self.NT))
 
-        #terms
+        # terms
         self.term_emb = nn.Parameter(torch.randn(self.T, self.s_dim))
         self.term_mlp = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
                                       ResLayer(self.s_dim, self.s_dim),
                                       ResLayer(self.s_dim, self.s_dim),
                                       nn.Linear(self.s_dim, self.V))
 
-        self.rule_state_emb = nn.Parameter(torch.randn(self.NT+self.T, self.s_dim))
+        self.rule_state_emb = nn.Parameter(torch.randn(self.NT + self.T, self.s_dim))
         rule_dim = self.s_dim
-        self.parent_mlp = nn.Sequential(nn.Linear(rule_dim,rule_dim),nn.ReLU(),nn.Linear(rule_dim,self.r))
-        self.left_mlp = nn.Sequential(nn.Linear(rule_dim,rule_dim), nn.ReLU(),nn.Linear(rule_dim,self.r))
-        self.right_mlp = nn.Sequential(nn.Linear(rule_dim,rule_dim),nn.ReLU(),nn.Linear(rule_dim,self.r))
-
+        self.parent_mlp = nn.Sequential(nn.Linear(rule_dim, rule_dim), nn.ReLU(), nn.Linear(rule_dim, self.r))
+        self.left_mlp = nn.Sequential(nn.Linear(rule_dim, rule_dim), nn.ReLU(), nn.Linear(rule_dim, self.r))
+        self.right_mlp = nn.Sequential(nn.Linear(rule_dim, rule_dim), nn.ReLU(), nn.Linear(rule_dim, self.r))
 
     def forward(self, input, **kwargs):
         x = input['word']
@@ -47,7 +50,7 @@ class TNPCFG(nn.Module):
 
         def terms():
             term_prob = self.term_mlp(self.term_emb).log_softmax(-1)
-            return term_prob[torch.arange(self.T)[None,None], x[:, :, None]]
+            return term_prob[torch.arange(self.T)[None, None], x[:, :, None]]
 
         def rules():
             rule_state_emb = self.rule_state_emb
@@ -55,9 +58,9 @@ class TNPCFG(nn.Module):
             head = self.parent_mlp(nonterm_emb).log_softmax(-1)
             left = self.left_mlp(rule_state_emb).log_softmax(-2)
             right = self.right_mlp(rule_state_emb).log_softmax(-2)
-            head = head.unsqueeze(0).expand(b,*head.shape)
-            left = left.unsqueeze(0).expand(b,*left.shape)
-            right = right.unsqueeze(0).expand(b,*right.shape)
+            head = head.unsqueeze(0).expand(b, *head.shape)
+            left = left.unsqueeze(0).expand(b, *left.shape)
+            right = right.unsqueeze(0).expand(b, *right.shape)
             return (head, left, right)
 
         root, unary, (head, left, right) = roots(), terms(), rules()
@@ -71,10 +74,9 @@ class TNPCFG(nn.Module):
 
     def loss(self, input):
         rules = self.forward(input)
-        result =  self.pcfg._inside(rules=rules, lens=input['seq_len'])
-        logZ =  -result['partition'].mean()
+        result = self.pcfg._inside(rules=rules, lens=input['seq_len'])
+        logZ = -result['partition'].mean()
         return logZ
-
 
     def evaluate(self, input, decode_type, **kwargs):
         rules = self.forward(input)
@@ -85,7 +87,6 @@ class TNPCFG(nn.Module):
             return self.pcfg.decode(rules=rules, lens=input['seq_len'], viterbi=False, mbr=True)
         else:
             raise NotImplementedError
-
 
 
 class FastTNPCFG(nn.Module):
@@ -112,24 +113,22 @@ class FastTNPCFG(nn.Module):
                                       # )
                                       nn.Linear(self.s_dim, self.NT))
 
-        #terms
+        # terms
         # self.term_emb = nn.Parameter(torch.randn(self.T, self.s_dim))
         self.term_mlp = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
                                       ResLayer(self.s_dim, self.s_dim),
                                       ResLayer(self.s_dim, self.s_dim),
                                       nn.Linear(self.s_dim, self.V))
 
-        self.rule_state_emb = nn.Parameter(torch.randn(self.NT+self.T, self.s_dim))
+        self.rule_state_emb = nn.Parameter(torch.randn(self.NT + self.T, self.s_dim))
         rule_dim = self.s_dim
-        self.parent_mlp = nn.Sequential(nn.Linear(rule_dim,rule_dim),nn.ReLU())
-        self.left_mlp = nn.Sequential(nn.Linear(rule_dim,rule_dim),nn.ReLU())
-        self.right_mlp = nn.Sequential(nn.Linear(rule_dim,rule_dim),nn.ReLU())
+        self.parent_mlp = nn.Sequential(nn.Linear(rule_dim, rule_dim), nn.ReLU())
+        self.left_mlp = nn.Sequential(nn.Linear(rule_dim, rule_dim), nn.ReLU())
+        self.right_mlp = nn.Sequential(nn.Linear(rule_dim, rule_dim), nn.ReLU())
 
         self.rank_proj = nn.Parameter(torch.randn(rule_dim, self.r))
 
-
         self._initialize()
-
 
     def _initialize(self):
         for p in self.parameters():
@@ -148,7 +147,7 @@ class FastTNPCFG(nn.Module):
         def terms():
             term_emb = self.rule_state_emb[self.NT:]
             term_prob = self.term_mlp(term_emb).log_softmax(-1)
-            return term_prob[torch.arange(self.T)[None,None], x[:, :, None]]
+            return term_prob[torch.arange(self.T)[None, None], x[:, :, None]]
             # term_prob = term_prob.unsqueeze(0).unsqueeze(1).expand(
             #     b, n, self.T, self.V
             # )
@@ -165,9 +164,9 @@ class FastTNPCFG(nn.Module):
             head = head.softmax(-1)
             left = left.softmax(-2)
             right = right.softmax(-2)
-            head = head.unsqueeze(0).expand(b,*head.shape)
-            left = left.unsqueeze(0).expand(b,*left.shape)
-            right = right.unsqueeze(0).expand(b,*right.shape)
+            head = head.unsqueeze(0).expand(b, *head.shape)
+            left = left.unsqueeze(0).expand(b, *left.shape)
+            right = right.unsqueeze(0).expand(b, *right.shape)
             return (head, left, right)
 
         root, unary, (head, left, right) = roots(), terms(), rules()
@@ -181,10 +180,9 @@ class FastTNPCFG(nn.Module):
 
     def loss(self, input):
         rules = self.forward(input)
-        result =  self.pcfg._inside(rules=rules, lens=input['seq_len'])
-        logZ =  -result['partition'].mean()
+        result = self.pcfg._inside(rules=rules, lens=input['seq_len'])
+        logZ = -result['partition'].mean()
         return logZ
-
 
     def evaluate(self, input, decode_type, **kwargs):
         rules = self.forward(input)

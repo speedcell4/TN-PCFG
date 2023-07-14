@@ -7,17 +7,15 @@ __all__ = [
     'GPT2Tokenizer'
 ]
 
-from functools import lru_cache
-import json
-import regex as re
 import itertools
-
-
-from ...io.file_utils import _get_gpt2_dir
-from ...core import logger
-from fastNLP.io.file_utils import _get_file_name_base_on_postfix
-
+import json
 import os
+import regex as re
+from functools import lru_cache
+
+from fastNLP.io.file_utils import _get_file_name_base_on_postfix
+from ...core import logger
+from ...io.file_utils import _get_gpt2_dir
 
 PRETRAINED_GPT2_MODEL_DIR = PRETRAINED_BERT_MODEL_DIR = {
     'en-small': 'gpt2-small.zip',
@@ -39,7 +37,8 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     """
     bs = (
-        list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
+            list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(
+        range(ord("®"), ord("ÿ") + 1))
     )
     cs = bs[:]
     n = 0
@@ -69,7 +68,6 @@ VOCAB_FILES_NAMES = {
     "vocab_file": "vocab.json",
     "merges_file": "merges.txt",
 }
-
 
 PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {
     "en-small": 1024,
@@ -123,14 +121,14 @@ class GPT2Tokenizer:
     padding_side = "right"
 
     def __init__(
-        self,
-        vocab_file,
-        merges_file,
-        errors="replace",
-        unk_token="<|endoftext|>",
-        bos_token="<|endoftext|>",
-        eos_token="<|endoftext|>",
-        **kwargs
+            self,
+            vocab_file,
+            merges_file,
+            errors="replace",
+            unk_token="<|endoftext|>",
+            bos_token="<|endoftext|>",
+            eos_token="<|endoftext|>",
+            **kwargs
     ):
         self._bos_token = None
         self._eos_token = None
@@ -182,8 +180,8 @@ class GPT2Tokenizer:
         self.cache = {}
 
     def _reinit_on_new_vocab(self, vocab):
-        self.encoder = {k:v for k,v in vocab.items()}
-        self.decoder = {v:k for k,v in vocab.items()}
+        self.encoder = {k: v for k, v in vocab.items()}
+        self.decoder = {v: k for k, v in vocab.items()}
         self.cache = {}
 
     @property
@@ -330,7 +328,7 @@ class GPT2Tokenizer:
                     new_word.extend(word[i:])
                     break
                 else:
-                    new_word.extend(word[i:j])  #最先找的
+                    new_word.extend(word[i:j])  # 最先找的
                     i = j
 
                 if word[i] == first and i < len(word) - 1 and word[i + 1] == second:
@@ -521,9 +519,10 @@ class GPT2Tokenizer:
                         tokenized_text += [sub_text]
                 text_list = tokenized_text
 
-            return list(itertools.chain.from_iterable((self._tokenize(token, add_prefix_space=add_prefix_space) if token not \
-                                                                                          in self.added_tokens_encoder and token not in all_special_tokens \
-                                                           else [token] for token in tokenized_text)))
+            return list(
+                itertools.chain.from_iterable((self._tokenize(token, add_prefix_space=add_prefix_space) if token not \
+                                                                                                           in self.added_tokens_encoder and token not in all_special_tokens \
+                                                   else [token] for token in tokenized_text)))
 
         added_tokens = list(self.added_tokens_encoder.keys()) + all_special_tokens
         tokenized_text = split_on_tokens(added_tokens, text)
@@ -720,7 +719,7 @@ class GPT2Tokenizer:
                     new_word.extend(word[i:])
                     break
                 else:
-                    new_word.extend(word[i:j])  #最先找的
+                    new_word.extend(word[i:j])  # 最先找的
                     i = j
 
                 if word[i] == first and i < len(word) - 1 and word[i + 1] == second:

@@ -3,6 +3,7 @@ r"""undocumented"""
 __all__ = [
     "viterbi_decode"
 ]
+
 import torch
 
 
@@ -24,13 +25,13 @@ def viterbi_decode(logits, transitions, mask=None, unpad=False):
 
     """
     batch_size, seq_len, n_tags = logits.size()
-    if transitions.size(0) == n_tags+2:
+    if transitions.size(0) == n_tags + 2:
         include_start_end_trans = True
     elif transitions.size(0) == n_tags:
         include_start_end_trans = False
     else:
         raise RuntimeError("The shapes of transitions and feats are not " \
-            "compatible.")
+                           "compatible.")
     logits = logits.transpose(0, 1).data  # L, B, H
     if mask is not None:
         mask = mask.transpose(0, 1).data.eq(True)  # L, B

@@ -17,9 +17,9 @@ def doc_process(m):
                     pass
                 else:
                     module_name = obj.__module__
-                    
+
                     # 识别并标注类和函数在不同层次中的位置
-                    
+
                     while 1:
                         defined_m = sys.modules[module_name]
                         try:
@@ -36,7 +36,7 @@ def doc_process(m):
                             break
 
                     # 识别并标注基类，只有基类也在 fastNLP 中定义才显示
-                    
+
                     if inspect.isclass(obj):
                         for base in obj.__bases__:
                             if base.__module__.startswith("fastNLP"):

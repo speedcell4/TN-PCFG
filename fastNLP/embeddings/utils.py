@@ -88,4 +88,3 @@ def get_sinusoid_encoding_table(n_position, d_hid, padding_idx=None):
         sinusoid_table[padding_idx] = 0.
 
     return torch.FloatTensor(sinusoid_table)
-

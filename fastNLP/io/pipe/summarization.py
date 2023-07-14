@@ -1,15 +1,14 @@
 r"""undocumented"""
-import os
 import numpy as np
+import os
 
 from .pipe import Pipe
 from .utils import _drop_empty_instance
-from ..loader.summarization import ExtCNNDMLoader
 from ..data_bundle import DataBundle
+from ..loader.summarization import ExtCNNDMLoader
+from ...core._logger import logger
 from ...core.const import Const
 from ...core.vocabulary import Vocabulary
-from ...core._logger import logger
-
 
 WORD_PAD = "[PAD]"
 WORD_UNK = "[UNK]"
@@ -25,6 +24,7 @@ class ExtCNNDMPipe(Pipe):
        :header: "text", "summary", "label", "publication", "text_wd", "words", "seq_len", "target"
     
     """
+
     def __init__(self, vocab_size, sent_max_len, doc_max_timesteps, vocab_path=None, domain=False):
         r"""
         
@@ -74,7 +74,8 @@ class ExtCNNDMPipe(Pipe):
         # db.apply(lambda x: _token_mask(x["text_wd"], self.sent_max_len), new_field_name="pad_token_mask")
 
         # pad document
-        data_bundle.apply(lambda x: _pad_doc(x[Const.INPUT], self.sent_max_len, self.doc_max_timesteps), new_field_name=Const.INPUT)
+        data_bundle.apply(lambda x: _pad_doc(x[Const.INPUT], self.sent_max_len, self.doc_max_timesteps),
+                          new_field_name=Const.INPUT)
         data_bundle.apply(lambda x: _sent_mask(x[Const.INPUT], self.doc_max_timesteps), new_field_name=Const.INPUT_LEN)
         data_bundle.apply(lambda x: _pad_label(x[Const.TARGET], self.doc_max_timesteps), new_field_name=Const.TARGET)
 
@@ -193,5 +194,3 @@ def _sent_mask(text_wd, doc_max_timesteps):
     else:
         sent_mask = [1] * doc_max_timesteps
     return sent_mask
-
-

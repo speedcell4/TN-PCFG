@@ -37,17 +37,29 @@ __all__ = [
     'SequenceGeneratorModel'
 ]
 
-from .base_model import BaseModel
-from .bert import BertForMultipleChoice, BertForQuestionAnswering, BertForSequenceClassification, \
-    BertForTokenClassification, BertForSentenceMatching
-from .biaffine_parser import BiaffineParser, GraphParser
-from .cnn_text_classification import CNNText
-from .sequence_labeling import SeqLabeling, AdvSeqLabel, BiLSTMCRF
-from .snli import ESIM
-from .star_transformer import StarTransEnc, STSeqCls, STNLICls, STSeqLabel
-from .seq2seq_model import TransformerSeq2SeqModel, LSTMSeq2SeqModel, Seq2SeqModel
-from .seq2seq_generator import SequenceGeneratorModel
 import sys
+
+from .base_model import BaseModel
+from .bert import BertForMultipleChoice
+from .bert import BertForQuestionAnswering
+from .bert import BertForSentenceMatching
+from .bert import BertForSequenceClassification
+from .bert import BertForTokenClassification
+from .biaffine_parser import BiaffineParser
+from .biaffine_parser import GraphParser
+from .cnn_text_classification import CNNText
+from .seq2seq_generator import SequenceGeneratorModel
+from .seq2seq_model import LSTMSeq2SeqModel
+from .seq2seq_model import Seq2SeqModel
+from .seq2seq_model import TransformerSeq2SeqModel
+from .sequence_labeling import AdvSeqLabel
+from .sequence_labeling import BiLSTMCRF
+from .sequence_labeling import SeqLabeling
+from .snli import ESIM
+from .star_transformer import StarTransEnc
+from .star_transformer import STNLICls
+from .star_transformer import STSeqCls
+from .star_transformer import STSeqLabel
 from ..doc_utils import doc_process
 
 doc_process(sys.modules[__name__])

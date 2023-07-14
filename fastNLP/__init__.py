@@ -13,21 +13,21 @@ fastNLP 中最常用的组件可以直接从 fastNLP 包中 import ，他们的�
 __all__ = [
     "Instance",
     "FieldArray",
-    
+
     "DataSetIter",
     "BatchIter",
     "TorchLoaderIter",
-    
+
     "Vocabulary",
     "DataSet",
     "Const",
-    
+
     "Trainer",
     "Tester",
 
     "DistTrainer",
     "get_local_rank",
-    
+
     "Callback",
     "GradientClipCallback",
     "EarlyStopCallback",
@@ -56,19 +56,19 @@ __all__ = [
     "CMRC2018Metric",
     "ClassifyFPreRecMetric",
     "ConfusionMatrixMetric",
-    
+
     "Optimizer",
     "SGD",
     "Adam",
     "AdamW",
-    
+
     "Sampler",
     "SequentialSampler",
     "BucketSampler",
     "RandomSampler",
     "SortedSampler",
     "ConstantTokenNumSampler",
-    
+
     "LossFunc",
     "CrossEntropyLoss",
     "MSELoss",
@@ -78,9 +78,9 @@ __all__ = [
     "LossInForward",
     "LossBase",
     "CMRC2018Loss",
-    
+
     "cache_results",
-    
+
     'logger',
     "init_logger_dist",
 ]
@@ -93,6 +93,7 @@ from . import models
 from . import modules
 from .core import *
 from .doc_utils import doc_process
-from .io import loader, pipe
+from .io import loader
+from .io import pipe
 
 doc_process(sys.modules[__name__])

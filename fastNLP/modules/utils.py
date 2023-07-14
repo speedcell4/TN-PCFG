@@ -8,11 +8,10 @@ __all__ = [
     "summary"
 ]
 
-from functools import reduce
-
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+from functools import reduce
 
 
 def initial_parameter(net, initial_method=None):
@@ -49,7 +48,7 @@ def initial_parameter(net, initial_method=None):
         init_method = init.uniform_
     else:
         init_method = init.xavier_normal_
-    
+
     def weights_init(m):
         # classname = m.__class__.__name__
         if isinstance(m, nn.Conv2d) or isinstance(m, nn.Conv1d) or isinstance(m, nn.Conv3d):  # for all the cnn
@@ -66,10 +65,10 @@ def initial_parameter(net, initial_method=None):
                     init.normal_(w.data)  # bias
         elif m is not None and hasattr(m, 'weight') and \
                 hasattr(m.weight, "requires_grad"):
-                if len(m.weight.size()) > 1:
-                    init_method(m.weight.data)
-                else:
-                    init.normal_(m.weight.data)  # batchnorm or layernorm
+            if len(m.weight.size()) > 1:
+                init_method(m.weight.data)
+            else:
+                init.normal_(m.weight.data)  # batchnorm or layernorm
         else:
             for w in m.parameters():
                 if w.requires_grad:
@@ -78,7 +77,7 @@ def initial_parameter(net, initial_method=None):
                     else:
                         init.normal_(w.data)  # bias
                 # print("init else")
-    
+
     net.apply(weights_init)
 
 
@@ -92,11 +91,11 @@ def summary(model: nn.Module):
     train = []
     nontrain = []
     buffer = []
-    
+
     def layer_summary(module: nn.Module):
         def count_size(sizes):
             return reduce(lambda x, y: x * y, sizes)
-        
+
         for p in module.parameters(recurse=False):
             if p.requires_grad:
                 train.append(count_size(p.shape))
@@ -106,7 +105,7 @@ def summary(model: nn.Module):
             buffer.append(count_size(p.shape))
         for subm in module.children():
             layer_summary(subm)
-    
+
     layer_summary(model)
     total_train = sum(train)
     total_nontrain = sum(nontrain)

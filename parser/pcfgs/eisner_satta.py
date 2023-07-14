@@ -1,10 +1,13 @@
-from .pcfgs import PCFG_base
 import torch
+
 from .fn import *
+from .pcfgs import PCFG_base
 
 '''
 O(l^4m^2+l^3m^3) inference with Bilexicalized PCFGs using (Eisner and Satta, 1999) 
 '''
+
+
 class EisnerSatta():
 
     @classmethod
@@ -27,9 +30,11 @@ class EisnerSatta():
         for i in range(N - 1):
             s[:, i, i + 1, i] = 0
             if i > 0:
-                s_need_dad[:, i, i + 1, :i], s_need_dad[:, i + 1, i, :i] = (rule[:, i, :i, :, nt_slice, t_slice]).max(-1)
+                s_need_dad[:, i, i + 1, :i], s_need_dad[:, i + 1, i, :i] = (rule[:, i, :i, :, nt_slice, t_slice]).max(
+                    -1)
             if i < N - 2:
-                s_need_dad[:, i, i + 1, i + 1:], s_need_dad[:, i + 1, i, i + 1:] = (rule[:, i, i + 1:, :, t_slice, nt_slice]).max(-2)
+                s_need_dad[:, i, i + 1, i + 1:], s_need_dad[:, i + 1, i, i + 1:] = (
+                rule[:, i, i + 1:, :, t_slice, nt_slice]).max(-2)
         LEFT = 0
         RIGHT = 1
         for w in range(2, N):
@@ -53,7 +58,10 @@ class EisnerSatta():
 
                     else:
                         a, b = (right_span[:, :, 0, 1:, ..., None, None, :] +
-                             stripe_headed_right(rule, n, w - 1, NT, T)).permute(0,1,3,5,2,4).reshape(B, n, NT, NT, -1).max(-1)
+                                stripe_headed_right(rule, n, w - 1, NT, T)).permute(0, 1, 3, 5, 2, 4).reshape(B, n, NT,
+                                                                                                              NT,
+                                                                                                              -1).max(
+                            -1)
                         s_inherent[:, torch.arange(n), torch.arange(n) + w] = b.float()
                         headed[:, :, i, 0] = a
 
@@ -64,7 +72,9 @@ class EisnerSatta():
 
                     else:
                         a, b = (left_span[:, :, w - 2, :w - 1, ..., None, :, None] +
-                                stripe_headed_left(rule, n, w - 1, NT, T)).permute(0, 1, 3, 4, 2, 5).reshape(B, n, NT, NT, -1).max(-1)
+                                stripe_headed_left(rule, n, w - 1, NT, T)).permute(0, 1, 3, 4, 2, 5).reshape(B, n, NT,
+                                                                                                             NT,
+                                                                                                             -1).max(-1)
                         headed[:, :, i, -1] = a
                         s_inherent[:, w + torch.arange(n), torch.arange(n)] = b.float()
 
@@ -77,13 +87,13 @@ class EisnerSatta():
                     r = w + l
                     if l > 0:
                         u = (rule[:, l:r, :l, :, nt_slice, nt_slice]
-                             + headed[:, l, :, None, None, None,:]).permute(0, 2, 3, 4, 1, 5)
+                             + headed[:, l, :, None, None, None, :]).permute(0, 2, 3, 4, 1, 5)
                         maxes, idx = u.reshape(*u.shape[:-2], -1).max(-1)
                         s_need_dad[:, l, r, :l] = maxes
                         s_need_dad[:, r, l, :l] = idx
                     if r < N - 1:
                         u = (rule[:, l:r, r:, :, nt_slice, nt_slice]
-                             + headed[:, l, :, None, None, :,None]).permute(0, 2, 3, 5, 1,4)
+                             + headed[:, l, :, None, None, :, None]).permute(0, 2, 3, 5, 1, 4)
                         maxes, idx = u.reshape(*u.shape[:-2], -1).max(-1)
                         s_need_dad[:, l, r, r:] = maxes
                         s_need_dad[:, r, l, r:] = idx
@@ -180,10 +190,7 @@ class EisnerSatta():
 
         del s, s_bp, s_need_dad
         return {
-            'prediction':predict_span,
-            'prediction_arc':predict_arc,
+            'prediction': predict_span,
+            'prediction_arc': predict_arc,
             'partition': 0
         }
-
-
-

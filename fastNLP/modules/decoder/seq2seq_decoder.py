@@ -1,14 +1,18 @@
 r"""undocumented"""
-from typing import Union, Tuple
 import math
-
 import torch
-from torch import nn
 import torch.nn.functional as F
-from ..attention import AttentionLayer, MultiHeadAttention
+from torch import nn
+from typing import Tuple
+from typing import Union
+
+from .seq2seq_state import LSTMState
+from .seq2seq_state import State
+from .seq2seq_state import TransformerState
+from ..attention import AttentionLayer
+from ..attention import MultiHeadAttention
 from ...embeddings import StaticEmbedding
 from ...embeddings.utils import get_embeddings
-from .seq2seq_state import State, LSTMState, TransformerState
 
 
 class Seq2SeqDecoder(nn.Module):
@@ -17,6 +21,7 @@ class Seq2SeqDecoder(nn.Module):
         用来承载该Decoder所需要的Encoder输出、Decoder需要记录的历史信息(例如LSTM的hidden信息)。
 
     """
+
     def __init__(self):
         super().__init__()
 
@@ -66,7 +71,8 @@ class Seq2SeqDecoder(nn.Module):
         if isinstance(outputs, torch.Tensor):
             return outputs[:, -1]
         else:
-            raise RuntimeError("Unrecognized output from the `forward()` function. Please override the `decode()` function.")
+            raise RuntimeError(
+                "Unrecognized output from the `forward()` function. Please override the `decode()` function.")
 
 
 class TiedEmbedding(nn.Module):
@@ -74,6 +80,7 @@ class TiedEmbedding(nn.Module):
     用于将weight和原始weight绑定
 
     """
+
     def __init__(self, weight):
         super().__init__()
         self.weight = weight  # vocab_size x embed_size
@@ -106,8 +113,8 @@ def get_binded_decoder_output_embed(embed):
 
 
 class LSTMSeq2SeqDecoder(Seq2SeqDecoder):
-    def __init__(self, embed: Union[nn.Module, StaticEmbedding, Tuple[int, int]], num_layers = 3, hidden_size = 300,
-                 dropout = 0.3, bind_decoder_input_output_embed = True, attention=True):
+    def __init__(self, embed: Union[nn.Module, StaticEmbedding, Tuple[int, int]], num_layers=3, hidden_size=300,
+                 dropout=0.3, bind_decoder_input_output_embed=True, attention=True):
         """
         LSTM的Decoder
 
@@ -132,7 +139,7 @@ class LSTMSeq2SeqDecoder(Seq2SeqDecoder):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.lstm = nn.LSTM(input_size=self.embed_dim + hidden_size, hidden_size=hidden_size, num_layers=num_layers,
-                            batch_first=True, bidirectional=False, dropout=dropout if num_layers>1 else 0)
+                            batch_first=True, bidirectional=False, dropout=dropout if num_layers > 1 else 0)
 
         self.attention_layer = AttentionLayer(hidden_size, hidden_size, hidden_size) if attention else None
         self.output_proj = nn.Linear(hidden_size, self.embed_dim)
@@ -149,7 +156,7 @@ class LSTMSeq2SeqDecoder(Seq2SeqDecoder):
         src_output = state.encoder_output
         encoder_mask = state.encoder_mask
 
-        assert tokens.size(1)>state.decode_length, "The state does not match the tokens."
+        assert tokens.size(1) > state.decode_length, "The state does not match the tokens."
         tokens = tokens[:, state.decode_length:]
         x = self.embed(tokens)
 
@@ -207,10 +214,10 @@ class LSTMSeq2SeqDecoder(Seq2SeqDecoder):
             encoder_output, (hidden, cell) = encoder_output
         else:
             hidden = cell = None
-        assert encoder_output.ndim==3
-        assert encoder_mask.size()==encoder_output.size()[:2]
-        assert encoder_output.size(-1)==self.hidden_size, "The dimension of encoder outputs should be the same with " \
-                                                          "the hidden_size."
+        assert encoder_output.ndim == 3
+        assert encoder_mask.size() == encoder_output.size()[:2]
+        assert encoder_output.size(-1) == self.hidden_size, "The dimension of encoder outputs should be the same with " \
+                                                            "the hidden_size."
 
         t = [hidden, cell]
         for idx in range(2):
@@ -218,8 +225,8 @@ class LSTMSeq2SeqDecoder(Seq2SeqDecoder):
             if v is None:
                 v = encoder_output.new_zeros(self.num_layers, encoder_output.size(0), self.hidden_size)
             else:
-                assert v.dim()==2
-                assert v.size(-1)==self.hidden_size
+                assert v.dim() == 2
+                assert v.size(-1) == self.hidden_size
                 v = v[None].repeat(self.num_layers, 1, 1)  # num_layers x bsz x hidden_size
             t[idx] = v
 
@@ -229,7 +236,7 @@ class LSTMSeq2SeqDecoder(Seq2SeqDecoder):
 
 
 class TransformerSeq2SeqDecoderLayer(nn.Module):
-    def __init__(self, d_model = 512, n_head = 8, dim_ff = 2048, dropout = 0.1, layer_idx = None):
+    def __init__(self, d_model=512, n_head=8, dim_ff=2048, dropout=0.1, layer_idx=None):
         """
 
         :param int d_model: 输入、输出的维度
@@ -304,8 +311,8 @@ class TransformerSeq2SeqDecoderLayer(nn.Module):
 
 class TransformerSeq2SeqDecoder(Seq2SeqDecoder):
     def __init__(self, embed: Union[nn.Module, StaticEmbedding, Tuple[int, int]], pos_embed: nn.Module = None,
-                 d_model = 512, num_layers=6, n_head = 8, dim_ff = 2048, dropout = 0.1,
-                 bind_decoder_input_output_embed = True):
+                 d_model=512, num_layers=6, n_head=8, dim_ff=2048, dropout=0.1,
+                 bind_decoder_input_output_embed=True):
         """
 
         :param embed: 输入token的embedding
@@ -355,19 +362,19 @@ class TransformerSeq2SeqDecoder(Seq2SeqDecoder):
         encoder_output = state.encoder_output
         encoder_mask = state.encoder_mask
 
-        assert state.decode_length<tokens.size(1), "The decoded tokens in State should be less than tokens."
+        assert state.decode_length < tokens.size(1), "The decoded tokens in State should be less than tokens."
         tokens = tokens[:, state.decode_length:]
         device = tokens.device
 
         x = self.embed_scale * self.embed(tokens)
         if self.pos_embed is not None:
-            position = torch.arange(state.decode_length, state.decode_length+tokens.size(1)).long().to(device)[None]
+            position = torch.arange(state.decode_length, state.decode_length + tokens.size(1)).long().to(device)[None]
             x += self.pos_embed(position)
         x = self.input_fc(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
         batch_size, max_tgt_len = tokens.size()
 
-        if max_tgt_len>1:
+        if max_tgt_len > 1:
             triangle_mask = self._get_triangle_mask(tokens)
         else:
             triangle_mask = None
@@ -409,5 +416,3 @@ class TransformerSeq2SeqDecoder(Seq2SeqDecoder):
     def _get_triangle_mask(tokens):
         tensor = tokens.new_ones(tokens.size(1), tokens.size(1))
         return torch.tril(tensor).byte()
-
-

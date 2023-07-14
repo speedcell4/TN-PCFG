@@ -8,8 +8,12 @@ from torch import nn
 
 from ..embeddings import get_embeddings
 from ..embeddings.utils import get_sinusoid_encoding_table
-from ..modules.decoder.seq2seq_decoder import Seq2SeqDecoder, TransformerSeq2SeqDecoder, LSTMSeq2SeqDecoder
-from ..modules.encoder.seq2seq_encoder import Seq2SeqEncoder, TransformerSeq2SeqEncoder, LSTMSeq2SeqEncoder
+from ..modules.decoder.seq2seq_decoder import LSTMSeq2SeqDecoder
+from ..modules.decoder.seq2seq_decoder import Seq2SeqDecoder
+from ..modules.decoder.seq2seq_decoder import TransformerSeq2SeqDecoder
+from ..modules.encoder.seq2seq_encoder import LSTMSeq2SeqEncoder
+from ..modules.encoder.seq2seq_encoder import Seq2SeqEncoder
+from ..modules.encoder.seq2seq_encoder import TransformerSeq2SeqEncoder
 
 
 class Seq2SeqModel(nn.Module):
@@ -135,12 +139,13 @@ class LSTMSeq2SeqModel(Seq2SeqModel):
     使用LSTMSeq2SeqEncoder和LSTMSeq2SeqDecoder的model
 
     """
+
     def __init__(self, encoder, decoder):
         super().__init__(encoder, decoder)
 
     @classmethod
     def build_model(cls, src_embed, tgt_embed=None,
-                    num_layers = 3, hidden_size = 400, dropout = 0.3, bidirectional=True,
+                    num_layers=3, hidden_size=400, dropout=0.3, bidirectional=True,
                     attention=True, bind_encoder_decoder_embed=False,
                     bind_decoder_input_output_embed=True):
         """
@@ -168,9 +173,9 @@ class LSTMSeq2SeqModel(Seq2SeqModel):
             assert tgt_embed is not None, "You need to pass `tgt_embed` when `bind_encoder_decoder_embed=False`"
             tgt_embed = get_embeddings(tgt_embed)
 
-        encoder = LSTMSeq2SeqEncoder(embed=src_embed, num_layers = num_layers,
-                 hidden_size = hidden_size, dropout = dropout, bidirectional=bidirectional)
-        decoder = LSTMSeq2SeqDecoder(embed=tgt_embed, num_layers = num_layers, hidden_size = hidden_size,
-                 dropout = dropout, bind_decoder_input_output_embed = bind_decoder_input_output_embed,
+        encoder = LSTMSeq2SeqEncoder(embed=src_embed, num_layers=num_layers,
+                                     hidden_size=hidden_size, dropout=dropout, bidirectional=bidirectional)
+        decoder = LSTMSeq2SeqDecoder(embed=tgt_embed, num_layers=num_layers, hidden_size=hidden_size,
+                                     dropout=dropout, bind_decoder_input_output_embed=bind_decoder_input_output_embed,
                                      attention=attention)
         return cls(encoder, decoder)

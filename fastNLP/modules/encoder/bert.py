@@ -10,16 +10,14 @@ __all__ = [
 import copy
 import json
 import math
+import numpy as np
 import os
-
 import torch
 from torch import nn
-import numpy as np
 
-from ...io.file_utils import _get_file_name_base_on_postfix
-from ...io.file_utils import _get_bert_dir
 from ...core import logger
-
+from ...io.file_utils import _get_bert_dir
+from ...io.file_utils import _get_file_name_base_on_postfix
 
 CONFIG_FILE = 'config.json'
 WEIGHTS_NAME = 'pytorch_model.bin'
@@ -146,6 +144,7 @@ class BertConfig(object):
     def save_pretrained(self, save_directory):
         self.to_json_file(save_directory)
 
+
 def gelu(x):
     return x * 0.5 * (1.0 + torch.erf(x / math.sqrt(2.0)))
 
@@ -155,7 +154,6 @@ def swish(x):
 
 
 ACT2FN = {"gelu": gelu, "relu": torch.nn.functional.relu, "swish": swish}
-
 
 BertLayerNorm = torch.nn.LayerNorm
 
@@ -197,15 +195,15 @@ class DistilBertEmbeddings(nn.Module):
             The embedded tokens (plus position embeddings, no token_type embeddings)
         """
         seq_length = input_ids.size(1)
-        position_ids = torch.arange(seq_length, dtype=torch.long, device=input_ids.device) # (max_seq_length)
-        position_ids = position_ids.unsqueeze(0).expand_as(input_ids)                      # (bs, max_seq_length)
+        position_ids = torch.arange(seq_length, dtype=torch.long, device=input_ids.device)  # (max_seq_length)
+        position_ids = position_ids.unsqueeze(0).expand_as(input_ids)  # (bs, max_seq_length)
 
-        word_embeddings = self.word_embeddings(input_ids)                   # (bs, max_seq_length, dim)
-        position_embeddings = self.position_embeddings(position_ids)        # (bs, max_seq_length, dim)
+        word_embeddings = self.word_embeddings(input_ids)  # (bs, max_seq_length, dim)
+        position_embeddings = self.position_embeddings(position_ids)  # (bs, max_seq_length, dim)
 
         embeddings = word_embeddings + position_embeddings  # (bs, max_seq_length, dim)
-        embeddings = self.LayerNorm(embeddings)             # (bs, max_seq_length, dim)
-        embeddings = self.dropout(embeddings)               # (bs, max_seq_length, dim)
+        embeddings = self.LayerNorm(embeddings)  # (bs, max_seq_length, dim)
+        embeddings = self.dropout(embeddings)  # (bs, max_seq_length, dim)
         return embeddings
 
 

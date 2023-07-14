@@ -8,19 +8,18 @@ __all__ = [
     "TorchLoaderIter",
 ]
 
-import atexit
 import abc
-
-from numbers import Number
+import atexit
 import numpy as np
 import torch
 import torch.utils.data
 from collections import defaultdict
+from numbers import Number
 
-from .dataset import DataSet
-from .sampler import SequentialSampler, Sampler
 from ._logger import logger
-
+from .dataset import DataSet
+from .sampler import Sampler
+from .sampler import SequentialSampler
 
 _python_is_exit = False
 
@@ -52,6 +51,7 @@ class DataSetGetter:
     r"""
     传递给torch.utils.data.DataLoader获取数据，DataLoder会传入int的idx获取数据(调用这里的__getitem__()函数)。
     """
+
     def __init__(self, dataset: DataSet, as_numpy=False):
         self.dataset = dataset
         self.as_numpy = as_numpy
@@ -108,6 +108,7 @@ class SamplerAdapter(torch.utils.data.Sampler):
     用于传入torch.utils.data.DataLoader中，DataLoader会调用__iter__()方法获取index(一次只取一个int)
 
     """
+
     def __init__(self, sampler, dataset):
         super().__init__(dataset)
         self.sampler = sampler
@@ -125,6 +126,7 @@ class BatchIter:
     Trainer用于迭代数据的类。继承该类，并实现get_num_batches(), get_batch_indices(), num_batches(), __iter__()方法以及dataset属性。
 
     """
+
     def __init__(self, dataset, batch_size=1, sampler=None,
                  num_workers=0, pin_memory=False, drop_last=False,
                  timeout=0, worker_init_fn=None, collate_fn=None,
@@ -227,6 +229,7 @@ class DataSetIter(BatchIter):
             # do stuff ...
 
     """
+
     def __init__(self, dataset, batch_size=1, sampler=None, as_numpy=False, num_workers=0, pin_memory=False,
                  drop_last=False, timeout=0, worker_init_fn=None, batch_sampler=None):
         r"""
@@ -396,6 +399,7 @@ class TorchLoaderIter(BatchIter):
                 os.remove(tmp_file_path)
     
     """
+
     def __init__(self, dataset, collate_fn, batch_size=1, sampler=None,
                  num_workers=0, pin_memory=False, drop_last=False,
                  timeout=0, worker_init_fn=None,
@@ -447,7 +451,7 @@ def _to_tensor(batch, field_dtype):
         返回的batch就是原来的数据，且flag为False
     """
     try:
-        if field_dtype is not None and isinstance(field_dtype, type)\
+        if field_dtype is not None and isinstance(field_dtype, type) \
                 and issubclass(field_dtype, Number) \
                 and not isinstance(batch, torch.Tensor):
             new_batch = torch.as_tensor(batch)

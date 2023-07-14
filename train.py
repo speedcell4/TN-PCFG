@@ -2,13 +2,15 @@
 
 import argparse
 import os
-from parser.cmds import Evaluate, Train
 import shutil
 import torch
 import traceback
-from pathlib import Path
-from easydict import EasyDict as edict
 import yaml
+from easydict import EasyDict as edict
+from pathlib import Path
+
+from parser.cmds import Evaluate
+from parser.cmds import Train
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -16,8 +18,6 @@ if __name__ == '__main__':
     )
     parser.add_argument('--conf', '-c', default='')
     parser.add_argument('--device', '-d', default='0')
-
-
 
     args2 = parser.parse_args()
     yaml_cfg = yaml.load(open(args2.conf, 'r'), Loader=yaml.Loader)
@@ -28,8 +28,7 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = args.device
     args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-
-    config_path = Path(args.conf  if args.conf else args2.load_from_dir + "/config.yaml")
+    config_path = Path(args.conf if args.conf else args2.load_from_dir + "/config.yaml")
     config_name = config_path.stem
     args.save_dir = args.save_dir + "/{}".format(config_name)
 
@@ -47,4 +46,3 @@ if __name__ == '__main__':
         traceback.print_exc()
         shutil.rmtree(args.save_dir)
         print("log directory have been deleted.")
-

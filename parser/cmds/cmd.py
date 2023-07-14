@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 import os
+import time
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from parser.helper.metric import LikelihoodMetric,  UF1, LossMetric, UAS
 
-import time
+from parser.helper.metric import LikelihoodMetric
+from parser.helper.metric import LossMetric
+from parser.helper.metric import UAS
+from parser.helper.metric import UF1
+
 
 class CMD(object):
     def __call__(self, args):
@@ -13,7 +17,7 @@ class CMD(object):
 
     def train(self, loader):
         self.model.train()
-        t = tqdm(loader, total=int(len(loader)),  position=0, leave=True)
+        t = tqdm(loader, total=int(len(loader)), position=0, leave=True)
         train_arg = self.args.train
         for x, _ in t:
 
@@ -22,11 +26,10 @@ class CMD(object):
             loss.backward()
             if train_arg.clip > 0:
                 nn.utils.clip_grad_norm_(self.model.parameters(),
-                                     train_arg.clip)
+                                         train_arg.clip)
             self.optimizer.step()
             t.set_postfix(loss=loss.item())
         return
-
 
     @torch.no_grad()
     def evaluate(self, loader, eval_dep=False, decode_type='mbr', model=None):
@@ -37,7 +40,7 @@ class CMD(object):
         if eval_dep:
             metric_uas = UAS()
         metric_ll = LikelihoodMetric()
-        t = tqdm(loader, total=int(len(loader)),  position=0, leave=True)
+        t = tqdm(loader, total=int(len(loader)), position=0, leave=True)
         print('decoding mode:{}'.format(decode_type))
         print('evaluate_dep:{}'.format(eval_dep))
         for x, y in t:
@@ -50,7 +53,3 @@ class CMD(object):
             return metric_f1, metric_ll
         else:
             return metric_f1, metric_uas, metric_ll
-
-
-
-

@@ -3,6 +3,8 @@ import torch
 '''
 Automatically put the tensor into the given device.
 '''
+
+
 class LoaderWrapper():
     def __init__(self, loader, device):
         self.loader = loader
@@ -25,8 +27,6 @@ class LoaderWrapper():
     def __getitem__(self, item):
         return self.loader[item]
 
-
-
     def __len__(self):
         return len(self.loader)
 
@@ -34,10 +34,12 @@ class LoaderWrapper():
 '''
 Accelerate data fetching.
 '''
+
+
 class DataPrefetcher:
     # https://github.com/NVIDIA/apex/blob/f5cd5ae937f168c763985f627bbf850648ea5f3f/examples/imagenet/main_amp.py#L256
     def __init__(self, loader, device, init=False):
-        self.loader = LoaderWrapper(loader,device)
+        self.loader = LoaderWrapper(loader, device)
         self.iter = None
         self.stream = torch.cuda.Stream()
 
@@ -71,4 +73,3 @@ class DataPrefetcher:
             if batch is None:
                 break
             yield batch
-

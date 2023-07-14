@@ -3,6 +3,7 @@ r"""undocumented"""
 __all__ = [
     "ConvMaxpool"
 ]
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

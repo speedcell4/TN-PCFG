@@ -29,8 +29,14 @@ import warnings
 from .pipe import Pipe
 from .utils import get_tokenizer
 from ..data_bundle import DataBundle
-from ..loader.matching import SNLILoader, MNLILoader, QNLILoader, RTELoader, QuoraLoader, BQCorpusLoader, CNXNLILoader, \
-    LCQMCLoader
+from ..loader.matching import BQCorpusLoader
+from ..loader.matching import CNXNLILoader
+from ..loader.matching import LCQMCLoader
+from ..loader.matching import MNLILoader
+from ..loader.matching import QNLILoader
+from ..loader.matching import QuoraLoader
+from ..loader.matching import RTELoader
+from ..loader.matching import SNLILoader
 from ...core._logger import logger
 from ...core.const import Const
 from ...core.vocabulary import Vocabulary
@@ -63,7 +69,7 @@ class MatchingBertPipe(Pipe):
         +-------------+------------+------------+--------+-------+---------+
 
     """
-    
+
     def __init__(self, lower=False, tokenizer: str = 'raw'):
         r"""
         
@@ -71,10 +77,10 @@ class MatchingBertPipe(Pipe):
         :param str tokenizer: 使用什么tokenizer来将句子切分为words. 支持spacy, raw两种。raw即使用空格拆分。
         """
         super().__init__()
-        
+
         self.lower = bool(lower)
         self.tokenizer = get_tokenizer(tokenize_method=tokenizer)
-    
+
     def _tokenize(self, data_bundle, field_names, new_field_names):
         r"""
 
@@ -88,7 +94,7 @@ class MatchingBertPipe(Pipe):
                 dataset.apply_field(lambda words: self.tokenizer(words), field_name=field_name,
                                     new_field_name=new_field_name)
         return data_bundle
-    
+
     def process(self, data_bundle):
         r"""
         输入的data_bundle中的dataset需要具有以下结构：
@@ -105,38 +111,38 @@ class MatchingBertPipe(Pipe):
         for dataset in data_bundle.datasets.values():
             if dataset.has_field(Const.TARGET):
                 dataset.drop(lambda x: x[Const.TARGET] == '-')
-        
+
         for name, dataset in data_bundle.datasets.items():
             dataset.copy_field(Const.RAW_WORDS(0), Const.INPUTS(0), )
             dataset.copy_field(Const.RAW_WORDS(1), Const.INPUTS(1), )
-        
+
         if self.lower:
             for name, dataset in data_bundle.datasets.items():
                 dataset[Const.INPUTS(0)].lower()
                 dataset[Const.INPUTS(1)].lower()
-        
+
         data_bundle = self._tokenize(data_bundle, [Const.INPUTS(0), Const.INPUTS(1)],
                                      [Const.INPUTS(0), Const.INPUTS(1)])
-        
+
         # concat两个words
         def concat(ins):
             words0 = ins[Const.INPUTS(0)]
             words1 = ins[Const.INPUTS(1)]
             words = words0 + ['[SEP]'] + words1
             return words
-        
+
         for name, dataset in data_bundle.datasets.items():
             dataset.apply(concat, new_field_name=Const.INPUT)
             dataset.delete_field(Const.INPUTS(0))
             dataset.delete_field(Const.INPUTS(1))
-        
+
         word_vocab = Vocabulary()
         word_vocab.from_dataset(*[dataset for name, dataset in data_bundle.datasets.items() if 'train' in name],
                                 field_name=Const.INPUT,
                                 no_create_entry_dataset=[dataset for name, dataset in data_bundle.datasets.items() if
                                                          'train' not in name])
         word_vocab.index_dataset(*data_bundle.datasets.values(), field_name=Const.INPUT)
-        
+
         target_vocab = Vocabulary(padding=None, unknown=None)
         target_vocab.from_dataset(*[ds for name, ds in data_bundle.iter_datasets() if 'train' in name],
                                   field_name=Const.TARGET,
@@ -149,24 +155,24 @@ class MatchingBertPipe(Pipe):
                        f"data set but not in train data set!."
             warnings.warn(warn_msg)
             logger.warning(warn_msg)
-        
+
         has_target_datasets = [dataset for name, dataset in data_bundle.datasets.items() if
                                dataset.has_field(Const.TARGET)]
         target_vocab.index_dataset(*has_target_datasets, field_name=Const.TARGET)
-        
+
         data_bundle.set_vocab(word_vocab, Const.INPUT)
         data_bundle.set_vocab(target_vocab, Const.TARGET)
-        
+
         input_fields = [Const.INPUT, Const.INPUT_LEN]
         target_fields = [Const.TARGET]
-        
+
         for name, dataset in data_bundle.datasets.items():
             dataset.add_seq_len(Const.INPUT)
             dataset.set_input(*input_fields, flag=True)
             for fields in target_fields:
                 if dataset.has_field(fields):
                     dataset.set_target(fields, flag=True)
-        
+
         return data_bundle
 
 
@@ -227,7 +233,7 @@ class MatchingPipe(Pipe):
         +-------------+------------+------------+--------+--------+--------+----------+----------+
 
     """
-    
+
     def __init__(self, lower=False, tokenizer: str = 'raw'):
         r"""
         
@@ -235,10 +241,10 @@ class MatchingPipe(Pipe):
         :param str tokenizer: 将原始数据tokenize的方式。支持spacy, raw. spacy是使用spacy切分，raw就是用空格切分。
         """
         super().__init__()
-        
+
         self.lower = bool(lower)
         self.tokenizer = get_tokenizer(tokenize_method=tokenizer)
-    
+
     def _tokenize(self, data_bundle, field_names, new_field_names):
         r"""
 
@@ -252,7 +258,7 @@ class MatchingPipe(Pipe):
                 dataset.apply_field(lambda words: self.tokenizer(words), field_name=field_name,
                                     new_field_name=new_field_name)
         return data_bundle
-    
+
     def process(self, data_bundle):
         r"""
         接受的DataBundle中的DataSet应该具有以下的field, target列可以没有
@@ -269,23 +275,23 @@ class MatchingPipe(Pipe):
         """
         data_bundle = self._tokenize(data_bundle, [Const.RAW_WORDS(0), Const.RAW_WORDS(1)],
                                      [Const.INPUTS(0), Const.INPUTS(1)])
-        
+
         for dataset in data_bundle.datasets.values():
             if dataset.has_field(Const.TARGET):
                 dataset.drop(lambda x: x[Const.TARGET] == '-')
-        
+
         if self.lower:
             for name, dataset in data_bundle.datasets.items():
                 dataset[Const.INPUTS(0)].lower()
                 dataset[Const.INPUTS(1)].lower()
-        
+
         word_vocab = Vocabulary()
         word_vocab.from_dataset(*[dataset for name, dataset in data_bundle.datasets.items() if 'train' in name],
                                 field_name=[Const.INPUTS(0), Const.INPUTS(1)],
                                 no_create_entry_dataset=[dataset for name, dataset in data_bundle.datasets.items() if
                                                          'train' not in name])
         word_vocab.index_dataset(*data_bundle.datasets.values(), field_name=[Const.INPUTS(0), Const.INPUTS(1)])
-        
+
         target_vocab = Vocabulary(padding=None, unknown=None)
         target_vocab.from_dataset(*[ds for name, ds in data_bundle.iter_datasets() if 'train' in name],
                                   field_name=Const.TARGET,
@@ -298,17 +304,17 @@ class MatchingPipe(Pipe):
                        f"data set but not in train data set!."
             warnings.warn(warn_msg)
             logger.warning(warn_msg)
-        
+
         has_target_datasets = [dataset for name, dataset in data_bundle.datasets.items() if
                                dataset.has_field(Const.TARGET)]
         target_vocab.index_dataset(*has_target_datasets, field_name=Const.TARGET)
-        
+
         data_bundle.set_vocab(word_vocab, Const.INPUTS(0))
         data_bundle.set_vocab(target_vocab, Const.TARGET)
-        
+
         input_fields = [Const.INPUTS(0), Const.INPUTS(1), Const.INPUT_LENS(0), Const.INPUT_LENS(1)]
         target_fields = [Const.TARGET]
-        
+
         for name, dataset in data_bundle.datasets.items():
             dataset.add_seq_len(Const.INPUTS(0), Const.INPUT_LENS(0))
             dataset.add_seq_len(Const.INPUTS(1), Const.INPUT_LENS(1))
@@ -316,7 +322,7 @@ class MatchingPipe(Pipe):
             for fields in target_fields:
                 if dataset.has_field(fields):
                     dataset.set_target(fields, flag=True)
-        
+
         return data_bundle
 
 
@@ -391,7 +397,7 @@ class RenamePipe(Pipe):
     def __init__(self, task='cn-nli'):
         super().__init__()
         self.task = task
-    
+
     def process(self, data_bundle: DataBundle):  # rename field name for Chinese Matching dataset
         if (self.task == 'cn-nli'):
             for name, dataset in data_bundle.datasets.items():
@@ -423,7 +429,7 @@ class RenamePipe(Pipe):
             raise RuntimeError(
                 "Only support task='cn-nli' or 'cn-nli-bert'"
             )
-        
+
         return data_bundle
 
 
@@ -431,7 +437,7 @@ class GranularizePipe(Pipe):
     def __init__(self, task=None):
         super().__init__()
         self.task = task
-    
+
     def _granularize(self, data_bundle, tag_map):
         r"""
         该函数对data_bundle中'target'列中的内容进行转换。
@@ -448,7 +454,7 @@ class GranularizePipe(Pipe):
             dataset.drop(lambda ins: ins[Const.TARGET] == -100)
             data_bundle.set_dataset(dataset, name)
         return data_bundle
-    
+
     def process(self, data_bundle: DataBundle):
         task_tag_dict = {
             'XNLI': {'neutral': 0, 'entailment': 1, 'contradictory': 2, 'contradiction': 2}
@@ -463,7 +469,7 @@ class GranularizePipe(Pipe):
 class MachingTruncatePipe(Pipe):  # truncate sentence for bert, modify seq_len
     def __init__(self):
         super().__init__()
-    
+
     def process(self, data_bundle: DataBundle):
         for name, dataset in data_bundle.datasets.items():
             pass
@@ -515,7 +521,7 @@ class TruncateBertPipe(Pipe):
         super().__init__()
         self.task = task
 
-    def _truncate(self, sentence_index:list, sep_index_vocab):
+    def _truncate(self, sentence_index: list, sep_index_vocab):
         # 根据[SEP]在vocab中的index，找到[SEP]在dataset的field['words']中的index
         sep_index_words = sentence_index.index(sep_index_vocab)
         words_before_sep = sentence_index[:sep_index_words]
@@ -537,9 +543,10 @@ class TruncateBertPipe(Pipe):
         for name in data_bundle.datasets.keys():
             dataset = data_bundle.get_dataset(name)
             sep_index_vocab = data_bundle.get_vocab('words').to_index('[SEP]')
-            dataset.apply_field(lambda sent_index: self._truncate(sentence_index=sent_index, sep_index_vocab=sep_index_vocab), field_name='words', new_field_name='words')
+            dataset.apply_field(
+                lambda sent_index: self._truncate(sentence_index=sent_index, sep_index_vocab=sep_index_vocab),
+                field_name='words', new_field_name='words')
 
             # truncate之后需要更新seq_len
             dataset.add_seq_len(field_name='words')
         return data_bundle
-

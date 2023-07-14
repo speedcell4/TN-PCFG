@@ -7,6 +7,7 @@ __all__ = [
     "AvgPool",
     "AvgPoolWithMask"
 ]
+
 import torch
 import torch.nn as nn
 

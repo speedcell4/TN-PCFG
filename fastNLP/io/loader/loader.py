@@ -4,10 +4,13 @@ __all__ = [
     "Loader"
 ]
 
-from typing import Union, Dict
+from typing import Dict
+from typing import Union
 
 from .. import DataBundle
-from ..file_utils import _get_dataset_url, get_cache_path, cached_path
+from ..file_utils import _get_dataset_url
+from ..file_utils import cached_path
+from ..file_utils import get_cache_path
 from ..utils import check_loader_paths
 from ...core.dataset import DataSet
 
@@ -22,10 +25,10 @@ class Loader:
     - load() 函数：将文件分别读取为DataSet，然后将多个DataSet放入到一个DataBundle中并返回
     
     """
-    
+
     def __init__(self):
         pass
-    
+
     def _load(self, path: str) -> DataSet:
         r"""
         给定一个路径，返回读取的DataSet。
@@ -34,7 +37,7 @@ class Loader:
         :return: DataSet
         """
         raise NotImplementedError
-    
+
     def load(self, paths: Union[str, Dict[str, str]] = None) -> DataBundle:
         r"""
         从指定一个或多个路径中的文件中读取数据，返回 :class:`~fastNLP.io.DataBundle` 。
@@ -69,7 +72,7 @@ class Loader:
         datasets = {name: self._load(path) for name, path in paths.items()}
         data_bundle = DataBundle(datasets=datasets)
         return data_bundle
-    
+
     def download(self) -> str:
         r"""
         自动下载该数据集
@@ -77,7 +80,7 @@ class Loader:
         :return: 下载后解压目录
         """
         raise NotImplementedError(f"{self.__class__} cannot download data automatically.")
-    
+
     @staticmethod
     def _get_dataset_path(dataset_name):
         r"""
@@ -86,9 +89,9 @@ class Loader:
         :param str dataset_name: 数据集的名称
         :return: str, 数据集的目录地址。直接到该目录下读取相应的数据即可。
         """
-        
+
         default_cache_path = get_cache_path()
         url = _get_dataset_url(dataset_name)
         output_dir = cached_path(url_or_filename=url, cache_dir=default_cache_path, name='dataset')
-        
+
         return output_dir

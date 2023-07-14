@@ -4,23 +4,21 @@ r"""
 
 __all__ = ['GPT2Model']
 
-
-from torch import nn
-import torch
-from fastNLP.core import logger
-import os
 import copy
 import json
 import math
+import os
+import torch
+from torch import nn
 from torch.nn import CrossEntropyLoss
-from fastNLP.io.file_utils import _get_file_name_base_on_postfix
 
-from ..decoder.seq2seq_decoder import Seq2SeqDecoder, State
+from fastNLP.core import logger
+from fastNLP.io.file_utils import _get_file_name_base_on_postfix
+from ..decoder.seq2seq_decoder import Seq2SeqDecoder
+from ..decoder.seq2seq_decoder import State
 from ..generator.seq2seq_generator import SequenceGenerator
 
-
 GELU_CONSTANT = math.sqrt(2 / math.pi)
-
 
 from ...io.file_utils import _get_gpt2_dir
 
@@ -47,24 +45,24 @@ class GPT2Config:
     """
 
     def __init__(
-        self,
-        vocab_size=50257,
-        n_positions=1024,
-        n_ctx=1024,
-        n_embd=768,
-        n_layer=12,
-        n_head=12,
-        resid_pdrop=0.1,
-        embd_pdrop=0.1,
-        attn_pdrop=0.1,
-        layer_norm_epsilon=1e-5,
-        initializer_range=0.02,
-        summary_type="cls_index",
-        summary_use_proj=True,
-        summary_activation=None,
-        summary_proj_to_labels=True,
-        summary_first_dropout=0.1,
-        **kwargs
+            self,
+            vocab_size=50257,
+            n_positions=1024,
+            n_ctx=1024,
+            n_embd=768,
+            n_layer=12,
+            n_head=12,
+            resid_pdrop=0.1,
+            embd_pdrop=0.1,
+            attn_pdrop=0.1,
+            layer_norm_epsilon=1e-5,
+            initializer_range=0.02,
+            summary_type="cls_index",
+            summary_use_proj=True,
+            summary_activation=None,
+            summary_proj_to_labels=True,
+            summary_first_dropout=0.1,
+            **kwargs
     ):
         """Constructs GPT2Config.
 
@@ -299,7 +297,7 @@ class Attention(nn.Module):
         if self.scale:
             w = w / math.sqrt(v.size(-1))
         nd, ns = w.size(-2), w.size(-1)
-        b = self.bias[:, :, ns - nd : ns, :ns]  # 1 x 1 x pre_len x (past_len + pre_len)
+        b = self.bias[:, :, ns - nd: ns, :ns]  # 1 x 1 x pre_len x (past_len + pre_len)
         w = w * b - 1e4 * (1 - b)  # batch_size x n_head x pre_len x (past_len + pre_len)
 
         if attention_mask is not None:
@@ -640,11 +638,11 @@ class GPT2PreTrainedModel(nn.Module):
         start_prefix = ""
         model_to_load = model
         if not hasattr(model, cls.base_model_prefix) and any(
-            s.startswith(cls.base_model_prefix) for s in state_dict.keys()
+                s.startswith(cls.base_model_prefix) for s in state_dict.keys()
         ):
             start_prefix = cls.base_model_prefix + "."
         if hasattr(model, cls.base_model_prefix) and not any(
-            s.startswith(cls.base_model_prefix) for s in state_dict.keys()
+                s.startswith(cls.base_model_prefix) for s in state_dict.keys()
         ):
             model_to_load = getattr(model, cls.base_model_prefix)
 
@@ -680,19 +678,19 @@ class GPT2PreTrainedModel(nn.Module):
 
     @torch.no_grad()
     def generate(
-        self,
-        input_ids,
-        max_length=None,
-        do_sample=None,
-        num_beams=None,
-        temperature=None,
-        top_k=None,
-        top_p=None,
-        repetition_penalty=None,
-        bos_token_id=None,
-        pad_token_id=None,
-        eos_token_ids=None,
-        length_penalty=None):
+            self,
+            input_ids,
+            max_length=None,
+            do_sample=None,
+            num_beams=None,
+            temperature=None,
+            top_k=None,
+            top_p=None,
+            repetition_penalty=None,
+            bos_token_id=None,
+            pad_token_id=None,
+            eos_token_ids=None,
+            length_penalty=None):
         """ Sequence generator for models with a LM head.
 
         The method currently supports greedy or penalized greedy decoding, sampling with top-k or nucleus sampling
@@ -727,10 +725,10 @@ class GPT2PreTrainedModel(nn.Module):
         """
         decoder = _GPT2Decoder(self)
         generator = SequenceGenerator(decoder=decoder, max_length=max_length, num_beams=num_beams,
-                                     do_sample=do_sample, temperature=temperature, top_k=top_k, top_p=top_p,
-                                     bos_token_id=bos_token_id, eos_token_id=eos_token_ids,
-                                     repetition_penalty=repetition_penalty, length_penalty=length_penalty,
-                                     pad_token_id=pad_token_id)
+                                      do_sample=do_sample, temperature=temperature, top_k=top_k, top_p=top_p,
+                                      bos_token_id=bos_token_id, eos_token_id=eos_token_ids,
+                                      repetition_penalty=repetition_penalty, length_penalty=length_penalty,
+                                      pad_token_id=pad_token_id)
         results = generator.generate(tokens=input_ids, state=GPT2State())
         return results
 
@@ -809,7 +807,7 @@ class GPT2Model(GPT2PreTrainedModel):
         if position_ids is not None:
             position_ids = position_ids.view(-1, input_shape[-1])
 
-        if state is None or len(state)==0:
+        if state is None or len(state) == 0:
             past_length = 0
             state = [None] * len(self.h)  # len(self.h) 是layer的层数
         else:
@@ -947,6 +945,7 @@ class _GPT2Decoder(Seq2SeqDecoder):
     """
     用于wrap GPT2是的可以在SequenceGenerator中使用
     """
+
     def __init__(self, gpt_model):
         super().__init__()
         self.gpt_model = gpt_model
@@ -955,12 +954,12 @@ class _GPT2Decoder(Seq2SeqDecoder):
         if state is None:
             state = GPT2State()
         lm_logits, presents, _ = self.gpt_model(input_ids=tokens[:, state.decode_length:],
-                                    state=state,
-                                    attention_mask=None,
-                                    token_type_ids=None,
-                                    position_ids=None,
-                                    head_mask=None,
-                                    output_attentions=False)
+                                                state=state,
+                                                attention_mask=None,
+                                                token_type_ids=None,
+                                                position_ids=None,
+                                                head_mask=None,
+                                                output_attentions=False)
         state.state = list(presents)
         return lm_logits[:, -1]
 

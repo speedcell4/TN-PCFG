@@ -8,10 +8,9 @@ __all__ = [
     "TokenEmbedding"
 ]
 
-from abc import abstractmethod
-
 import torch
 import torch.nn as nn
+from abc import abstractmethod
 
 from .utils import get_embeddings
 
@@ -30,7 +29,7 @@ class Embedding(nn.Module):
         >>> embed = Embedding(init_embed)  # 使用numpy.ndarray的值作为初始化值初始化一个Embedding
 
     """
-    
+
     def __init__(self, init_embed, word_dropout=0, dropout=0.0, unk_index=None):
         r"""
         
@@ -42,9 +41,9 @@ class Embedding(nn.Module):
         :param int unk_index: drop word时替换为的index。fastNLP的Vocabulary的unk_index默认为1。
         """
         super(Embedding, self).__init__()
-        
+
         self.embed = get_embeddings(init_embed)
-        
+
         self.dropout = nn.Dropout(dropout)
         if not isinstance(self.embed, TokenEmbedding):
             if hasattr(self.embed, 'embed_size'):
@@ -60,7 +59,7 @@ class Embedding(nn.Module):
             unk_index = self.embed.get_word_vocab().unknown_idx
         self.unk_index = unk_index
         self.word_dropout = word_dropout
-    
+
     def forward(self, words):
         r"""
         :param torch.LongTensor words: [batch, seq_len]
@@ -72,25 +71,25 @@ class Embedding(nn.Module):
             words = words.masked_fill(mask, self.unk_index)
         words = self.embed(words)
         return self.dropout(words)
-    
+
     @property
     def num_embedding(self) -> int:
         if isinstance(self.embed, nn.Embedding):
             return self.embed.weight.size(0)
         else:
             return self.embed.num_embeddings
-    
+
     def __len__(self):
         return len(self.embed)
-    
+
     @property
     def embed_size(self) -> int:
         return self._embed_size
-    
+
     @property
     def embedding_dim(self) -> int:
         return self._embed_size
-    
+
     @property
     def requires_grad(self):
         r"""
@@ -101,14 +100,14 @@ class Embedding(nn.Module):
             return self.embed.weight.requires_grad
         else:
             return self.embed.requires_grad
-    
+
     @requires_grad.setter
     def requires_grad(self, value):
         if not isinstance(self.embed, TokenEmbedding):
             self.embed.weight.requires_grad = value
         else:
             self.embed.requires_grad = value
-    
+
     @property
     def size(self):
         if isinstance(self.embed, TokenEmbedding):
@@ -122,6 +121,7 @@ class TokenEmbedding(nn.Module):
     fastNLP中各种Embedding的基类
 
     """
+
     def __init__(self, vocab, word_dropout=0.0, dropout=0.0):
         super(TokenEmbedding, self).__init__()
         if vocab.rebuild:
@@ -134,7 +134,7 @@ class TokenEmbedding(nn.Module):
         self.word_dropout = word_dropout
         self._word_unk_index = vocab.unknown_idx
         self.dropout_layer = nn.Dropout(dropout)
-    
+
     def drop_word(self, words):
         r"""
         按照设定随机将words设置为unknown_index。
@@ -149,7 +149,7 @@ class TokenEmbedding(nn.Module):
             mask = mask.__and__(pad_mask)
             words = words.masked_fill(mask, self._word_unk_index)
         return words
-    
+
     def dropout(self, words):
         r"""
         对embedding后的word表示进行drop。
@@ -158,7 +158,7 @@ class TokenEmbedding(nn.Module):
         :return:
         """
         return self.dropout_layer(words)
-    
+
     @property
     def requires_grad(self):
         r"""
@@ -170,23 +170,23 @@ class TokenEmbedding(nn.Module):
             return requires_grads.pop()
         else:
             return None
-    
+
     @requires_grad.setter
     def requires_grad(self, value):
         for param in self.parameters():
             param.requires_grad = value
-    
+
     def __len__(self):
         return len(self._word_vocab)
-    
+
     @property
     def embed_size(self) -> int:
         return self._embed_size
-    
+
     @property
     def embedding_dim(self) -> int:
         return self._embed_size
-    
+
     @property
     def num_embeddings(self) -> int:
         r"""
@@ -194,7 +194,7 @@ class TokenEmbedding(nn.Module):
         :return:
         """
         return len(self._word_vocab)
-    
+
     def get_word_vocab(self):
         r"""
         返回embedding的词典。
@@ -202,11 +202,11 @@ class TokenEmbedding(nn.Module):
         :return: Vocabulary
         """
         return self._word_vocab
-    
+
     @property
     def size(self):
         return torch.Size(self.num_embeddings, self._embed_size)
-    
+
     @abstractmethod
     def forward(self, words):
         raise NotImplementedError

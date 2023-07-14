@@ -14,7 +14,8 @@ from torch.nn import CrossEntropyLoss
 from .base_model import BaseModel
 from ..core.const import Const
 from ..core.utils import seq_len_to_mask
-from ..embeddings.embedding import TokenEmbedding, Embedding
+from ..embeddings.embedding import Embedding
+from ..embeddings.embedding import TokenEmbedding
 from ..modules.encoder import BiAttention
 
 
@@ -175,4 +176,3 @@ class BiRNN(nn.Module):
                                   output.size(2)).type(output.data.type())
             output = torch.cat([output, padding], 1)
         return output
-

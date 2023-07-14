@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
+
 from parser.modules.res import ResLayer
-from ..pcfgs.blpcfg import BLPCFG, FastBLPCFG
+from ..pcfgs.blpcfg import BLPCFG
+from ..pcfgs.blpcfg import FastBLPCFG
 from ..pcfgs.eisner_satta import EisnerSatta
 
 
@@ -43,10 +45,9 @@ class NeuralBLPCFG(nn.Module):
                                       )
 
         self.noninherent_mlp = nn.Sequential(
-                                             nn.Linear(self.s_dim, self.NT_T * 2))
+            nn.Linear(self.s_dim, self.NT_T * 2))
 
         self.inherent_mlp = nn.Sequential(nn.Linear(self.s_dim, self.NT_T))
-
 
         self.head_encoder = nn.Linear(self.s_dim + self.s_dim, self.s_dim)
 
@@ -98,8 +99,9 @@ class NeuralBLPCFG(nn.Module):
 
         inherent = self.inherent_mlp(self.r_emb).log_softmax(-1).permute(1, 0).unsqueeze(0).expand(b, -1, -1)
 
-        noninherent_symbol = self.noninherent_mlp(self.r_emb2).log_softmax(-1).reshape(self.r, self.NT_T, 2).transpose(1, 0).unsqueeze(0).expand(b, -1,
-                                                                                                            -1, -1)
+        noninherent_symbol = self.noninherent_mlp(self.r_emb2).log_softmax(-1).reshape(self.r, self.NT_T, 2).transpose(
+            1, 0).unsqueeze(0).expand(b, -1,
+                                      -1, -1)
 
         noninherent_word = self.beta_mlp(self.r_emb3).log_softmax(-1).transpose(1, 0).unsqueeze(0).expand(b, -1, -1)
         noninherent_word = torch.gather(noninherent_word, 1, x.unsqueeze(-1).expand(-1, -1, self.r))
@@ -111,8 +113,6 @@ class NeuralBLPCFG(nn.Module):
             'inherent': inherent,
             'root': roots(),
             'kl': 0}
-
-
 
     def forward4viterbi(self, input):
         x = input['word']
@@ -131,10 +131,11 @@ class NeuralBLPCFG(nn.Module):
         inherent = self.inherent_mlp(self.r_emb).softmax(-1).permute(1, 0).unsqueeze(0).expand(b, -1, -1)
 
         noninherent_symbol = self.noninherent_mlp(self.r_emb2).softmax(-1).reshape(self.r, self.NT_T, 2).transpose(1,
-                                                                                                0).unsqueeze(0).expand(b, -1, -1, -1)
+                                                                                                                   0).unsqueeze(
+            0).expand(b, -1, -1, -1)
 
         noninherent_word = self.beta_mlp(self.r_emb3).softmax(-1).transpose(1, 0).unsqueeze(
-                0).expand(b, -1, -1)
+            0).expand(b, -1, -1)
 
         noninherent_word = torch.gather(noninherent_word, 1, x.unsqueeze(-1).expand(-1, -1, self.r))
 
@@ -147,31 +148,30 @@ class NeuralBLPCFG(nn.Module):
             return roots.expand(b, self.NT).unsqueeze(1) + roots_v.transpose(-1, -2)
 
         def rule():
-            rule = torch.zeros(b, n, n, self.NT, self.NT_T, self.NT_T,2, device=torch.device('cuda'))
+            rule = torch.zeros(b, n, n, self.NT, self.NT_T, self.NT_T, 2, device=torch.device('cuda'))
             #### to avoid cuda out-of-memory:
             for i in range(self.NT):
-                rule[:, :, :, i, ...] = torch.einsum("qnr, qbrd, qmr, qcr -> qmnbcd", head[:, :, i], noninherent_symbol,noninherent_word,  inherent).add_(1e-15).log_()
+                rule[:, :, :, i, ...] = torch.einsum("qnr, qbrd, qmr, qcr -> qmnbcd", head[:, :, i], noninherent_symbol,
+                                                     noninherent_word, inherent).add_(1e-15).log_()
             left = rule[..., 1].transpose(-1, -2)
             right = rule[..., 0]
-            rule = left.mul_(torch.tril(torch.ones(n, n, device=torch.device("cuda")), diagonal=-1).unsqueeze(0).unsqueeze(
-                -1).unsqueeze(-1).unsqueeze(-1).expand(*left.shape))\
-                   + right.mul_(torch.triu(torch.ones(n, n, device=torch.device("cuda")), diagonal=1).unsqueeze(0).unsqueeze(
-                -1).unsqueeze(-1).unsqueeze(-1).expand(*right.shape))
+            rule = left.mul_(
+                torch.tril(torch.ones(n, n, device=torch.device("cuda")), diagonal=-1).unsqueeze(0).unsqueeze(
+                    -1).unsqueeze(-1).unsqueeze(-1).expand(*left.shape)) \
+                   + right.mul_(
+                torch.triu(torch.ones(n, n, device=torch.device("cuda")), diagonal=1).unsqueeze(0).unsqueeze(
+                    -1).unsqueeze(-1).unsqueeze(-1).expand(*right.shape))
             return rule
 
         return {
             'root': roots(),
             'rule': rule(),
             'kl': 0
-            }
-
-
-
-
+        }
 
     def loss(self, input):
         rules = self.forward(input)
-        result =  self.pcfg.loss(rules, input['seq_len'])
+        result = self.pcfg.loss(rules, input['seq_len'])
         return -result['partition'].mean()
 
     def evaluate(self, input, decode_type='mbr', eval_dep=False):
@@ -180,13 +180,11 @@ class NeuralBLPCFG(nn.Module):
             return self.pcfg.decode(rules, input['seq_len'], mbr=True, eval_dep=eval_dep)
         else:
             rules = self.forward4viterbi(input)
-            result = EisnerSatta.viterbi_decoding(rule=rules['rule'], root=rules['root'],lens=input['seq_len'])
+            result = EisnerSatta.viterbi_decoding(rule=rules['rule'], root=rules['root'], lens=input['seq_len'])
             rules = self.forward(input)
             logZ = self.pcfg.loss(rules, input['seq_len'])
             result.update(logZ)
             return result
-
-
 
 
 class FastNBLPCFG(nn.Module):
@@ -227,7 +225,7 @@ class FastNBLPCFG(nn.Module):
                                       )
 
         self.noninherent_mlp = nn.Sequential(
-                                             nn.Linear(self.s_dim, self.NT_T * 2))
+            nn.Linear(self.s_dim, self.NT_T * 2))
 
         self.inherent_mlp = nn.Sequential(nn.Linear(self.s_dim, self.NT_T))
         self.head_encoder = nn.Linear(self.s_dim + self.s_dim, self.s_dim)
@@ -275,8 +273,10 @@ class FastNBLPCFG(nn.Module):
         head = self.head_mlp(self.head_encoder(nt_x_emb).relu() + x_emb)
         head = head.softmax(-1)
         inherent = self.inherent_mlp(self.r_emb).softmax(-1).permute(1, 0).unsqueeze(0).expand(b, -1, -1)
-        noninherent_symbol = self.noninherent_mlp(self.r_emb2).softmax(-1).reshape(self.r, self.NT_T, 2).transpose(1, 0).unsqueeze(0).expand(b, -1,
-                                                                                                            -1, -1)
+        noninherent_symbol = self.noninherent_mlp(self.r_emb2).softmax(-1).reshape(self.r, self.NT_T, 2).transpose(1,
+                                                                                                                   0).unsqueeze(
+            0).expand(b, -1,
+                      -1, -1)
         noninherent_word = self.beta_mlp(self.r_emb3).log_softmax(-1).transpose(1, 0).unsqueeze(0).expand(b, -1, -1)
         noninherent_word = torch.gather(noninherent_word, 1, x.unsqueeze(-1).expand(-1, -1, self.r))
 
@@ -291,7 +291,7 @@ class FastNBLPCFG(nn.Module):
 
     def loss(self, input):
         rules = self.forward(input)
-        result =  self.pcfg.loss(rules, input['seq_len'])
+        result = self.pcfg.loss(rules, input['seq_len'])
         return -result['partition'].mean()
 
     def evaluate(self, input, decode_type='mbr', eval_dep=False):
@@ -300,10 +300,8 @@ class FastNBLPCFG(nn.Module):
             return self.pcfg.decode(rules, input['seq_len'], mbr=True, eval_dep=eval_dep)
         else:
             rules = self.forward4viterbi(input)
-            result = EisnerSatta.viterbi_decoding(rule=rules['rule'], root=rules['root'],lens=input['seq_len'])
+            result = EisnerSatta.viterbi_decoding(rule=rules['rule'], root=rules['root'], lens=input['seq_len'])
             rules = self.forward(input)
             logZ = self.pcfg.loss(rules, input['seq_len'])
             result.update(logZ)
             return result
-
-

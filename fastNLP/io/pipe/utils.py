@@ -6,12 +6,12 @@ __all__ = [
     "get_tokenizer",
 ]
 
-from typing import List
 import warnings
+from typing import List
 
+from ...core._logger import logger
 from ...core.const import Const
 from ...core.vocabulary import Vocabulary
-from ...core._logger import logger
 
 
 def iob2(tags: List[str]) -> List[str]:
@@ -121,7 +121,7 @@ def _indexize(data_bundle, input_field_names=Const.INPUT, target_field_names=Con
                                )
         src_vocab.index_dataset(*data_bundle.datasets.values(), field_name=input_field_name)
         data_bundle.set_vocab(src_vocab, input_field_name)
-    
+
     for target_field_name in target_field_names:
         tgt_vocab = Vocabulary(unknown=None, padding=None)
         tgt_vocab.from_dataset(*[ds for name, ds in data_bundle.iter_datasets() if 'train' in name],
@@ -136,9 +136,10 @@ def _indexize(data_bundle, input_field_names=Const.INPUT, target_field_names=Con
                        f"These label(s) are {tgt_vocab._no_create_word}"
             warnings.warn(warn_msg)
             logger.warning(warn_msg)
-        tgt_vocab.index_dataset(*[ds for ds in data_bundle.datasets.values() if ds.has_field(target_field_name)], field_name=target_field_name)
+        tgt_vocab.index_dataset(*[ds for ds in data_bundle.datasets.values() if ds.has_field(target_field_name)],
+                                field_name=target_field_name)
         data_bundle.set_vocab(tgt_vocab, target_field_name)
-    
+
     return data_bundle
 
 
@@ -151,7 +152,7 @@ def _add_words_field(data_bundle, lower=False):
     :return: 传入的DataBundle
     """
     data_bundle.copy_field(field_name=Const.RAW_WORD, new_field_name=Const.INPUT, ignore_miss_dataset=True)
-    
+
     if lower:
         for name, dataset in data_bundle.datasets.items():
             dataset[Const.INPUT].lower()
@@ -167,7 +168,7 @@ def _add_chars_field(data_bundle, lower=False):
     :return: 传入的DataBundle
     """
     data_bundle.copy_field(field_name=Const.RAW_CHAR, new_field_name=Const.CHAR_INPUT, ignore_miss_dataset=True)
-    
+
     if lower:
         for name, dataset in data_bundle.datasets.items():
             dataset[Const.CHAR_INPUT].lower()
@@ -182,7 +183,7 @@ def _drop_empty_instance(data_bundle, field_name):
     :param str field_name: 对哪个field进行检查，如果为None，则任意field为空都会删掉
     :return: 传入的DataBundle
     """
-    
+
     def empty_instance(ins):
         if field_name:
             field_value = ins[field_name]
@@ -193,10 +194,10 @@ def _drop_empty_instance(data_bundle, field_name):
             if field_value in ((), {}, [], ''):
                 return True
         return False
-    
+
     for name, dataset in data_bundle.datasets.items():
         dataset.drop(empty_instance)
-    
+
     return data_bundle
 
 

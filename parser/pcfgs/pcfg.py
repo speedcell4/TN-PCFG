@@ -1,6 +1,10 @@
-from parser.pcfgs.pcfgs import PCFG_base
-from parser.pcfgs.fn import stripe, diagonal_copy_, diagonal, checkpoint
 import torch
+
+from parser.pcfgs.fn import checkpoint
+from parser.pcfgs.fn import diagonal
+from parser.pcfgs.fn import diagonal_copy_
+from parser.pcfgs.fn import stripe
+from parser.pcfgs.pcfgs import PCFG_base
 
 
 class PCFG(PCFG_base):
@@ -46,7 +50,8 @@ class PCFG(PCFG_base):
         @checkpoint
         def XYZ(Y, Z, rule):
             n = Y.shape[1]
-            b_n_yz = contract(Y[:, :, 1:-1, :].unsqueeze(-1) + Z[:, :, 1:-1, :].unsqueeze(-2), dim=2).reshape(batch, n, -1)
+            b_n_yz = contract(Y[:, :, 1:-1, :].unsqueeze(-1) + Z[:, :, 1:-1, :].unsqueeze(-2), dim=2).reshape(batch, n,
+                                                                                                              -1)
             b_n_x = contract(b_n_yz.unsqueeze(2) + rule.unsqueeze(1))
             return b_n_x
 
@@ -58,7 +63,6 @@ class PCFG(PCFG_base):
             b_n_x = contract(b_n_yz.unsqueeze(-2) + rule.unsqueeze(1))
             return b_n_x
 
-
         @checkpoint
         def XyZ(y, Z, rule):
             n = Z.shape[1]
@@ -67,7 +71,6 @@ class PCFG(PCFG_base):
             b_n_x = contract(b_n_yz.unsqueeze(-2) + rule.unsqueeze(1))
             return b_n_x
 
-
         for w in range(2, N):
             n = N - w
 
@@ -75,7 +78,8 @@ class PCFG(PCFG_base):
             Z_term = terms[:, w - 1:, None, :]
 
             if w == 2:
-                diagonal_copy_(s, Xyz(Y_term, Z_term, X_y_z) + span_indicator[:, torch.arange(n), torch.arange(n) + w].unsqueeze(-1), w)
+                diagonal_copy_(s, Xyz(Y_term, Z_term, X_y_z) + span_indicator[:, torch.arange(n),
+                                                               torch.arange(n) + w].unsqueeze(-1), w)
                 continue
 
             n = N - w
@@ -90,7 +94,9 @@ class PCFG(PCFG_base):
             x[1].copy_(XYz(Y, Z_term, X_Y_z))
             x[2].copy_(XyZ(Y_term, Z, X_y_Z))
 
-            diagonal_copy_(s, contract(x, dim=0) + span_indicator[:, torch.arange(n), torch.arange(n) + w].unsqueeze(-1), w)
+            diagonal_copy_(s,
+                           contract(x, dim=0) + span_indicator[:, torch.arange(n), torch.arange(n) + w].unsqueeze(-1),
+                           w)
 
         logZ = contract(s[torch.arange(batch), 0, lens] + root)
 
@@ -111,7 +117,6 @@ class Faster_PCFG(PCFG_base):
         terms = rules['unary']
         rule = rules['rule']
         root = rules['root']
-
 
         batch, N, T = terms.shape
         N += 1
@@ -140,10 +145,10 @@ class Faster_PCFG(PCFG_base):
         # terminals: x y z
         # XYZ: X->YZ
         @checkpoint
-        def Xyz(y, z,  rule):
+        def Xyz(y, z, rule):
             y_normalizer = y.max(-1)[0]
             z_normalizer = z.max(-1)[0]
-            y, z = (y-y_normalizer.unsqueeze(-1)).exp(), (z-z_normalizer.unsqueeze(-1)).exp()
+            y, z = (y - y_normalizer.unsqueeze(-1)).exp(), (z - z_normalizer.unsqueeze(-1)).exp()
             x = torch.einsum('bny, bnz, bxyz -> bnx', y, z, rule)
             x = ((x + 1e-9).log() + y_normalizer.unsqueeze(-1) + z_normalizer.unsqueeze(-1))
             return x
@@ -155,7 +160,7 @@ class Faster_PCFG(PCFG_base):
             Z = Z[:, :, 1:-1, :]
             Y_normalizer = Y.max(-1)[0]
             Z_normalizer = Z.max(-1)[0]
-            Y, Z = (Y-Y_normalizer.unsqueeze(-1)).exp(), (Z-Z_normalizer.unsqueeze(-1)).exp()
+            Y, Z = (Y - Y_normalizer.unsqueeze(-1)).exp(), (Z - Z_normalizer.unsqueeze(-1)).exp()
             X = torch.einsum('bnwy, bnwz, bxyz -> bnwx', Y, Z, rule)
             X = (X + 1e-9).log() + Y_normalizer.unsqueeze(-1) + Z_normalizer.unsqueeze(-1)
             X = X.logsumexp(2)
@@ -166,7 +171,7 @@ class Faster_PCFG(PCFG_base):
             Y = Y[:, :, -1, :]
             Y_normalizer = Y.max(-1)[0]
             z_normalizer = z.max(-1)[0]
-            Y, z = (Y-Y_normalizer.unsqueeze(-1)).exp(), (z-z_normalizer.unsqueeze(-1)).exp()
+            Y, z = (Y - Y_normalizer.unsqueeze(-1)).exp(), (z - z_normalizer.unsqueeze(-1)).exp()
             X = torch.einsum('bny, bnz, bxyz->bnx', Y, z, rule)
             X = (X + 1e-9).log() + Y_normalizer.unsqueeze(-1) + z_normalizer.unsqueeze(-1)
             return X
@@ -176,20 +181,20 @@ class Faster_PCFG(PCFG_base):
             Z = Z[:, :, 0, :]
             y_normalizer = y.max(-1)[0]
             Z_normalizer = Z.max(-1)[0]
-            y, Z = (y-y_normalizer.unsqueeze(-1)).exp(), (Z-Z_normalizer.unsqueeze(-1)).exp()
+            y, Z = (y - y_normalizer.unsqueeze(-1)).exp(), (Z - Z_normalizer.unsqueeze(-1)).exp()
             X = torch.einsum('bny, bnz, bxyz-> bnx', y, Z, rule)
             X = (X + 1e-9).log() + y_normalizer.unsqueeze(-1) + Z_normalizer.unsqueeze(-1)
             return X
 
-
         for w in range(2, N):
             n = N - w
 
-            Y_term = terms[:, :n, :,]
+            Y_term = terms[:, :n, :, ]
             Z_term = terms[:, w - 1:, :]
 
             if w == 2:
-                diagonal_copy_(s, Xyz(Y_term, Z_term, X_y_z) + span_indicator[:, torch.arange(n), torch.arange(n) + w].unsqueeze(-1), w)
+                diagonal_copy_(s, Xyz(Y_term, Z_term, X_y_z) + span_indicator[:, torch.arange(n),
+                                                               torch.arange(n) + w].unsqueeze(-1), w)
                 continue
 
             n = N - w
@@ -204,7 +209,9 @@ class Faster_PCFG(PCFG_base):
             x[1].copy_(XYz(Y, Z_term, X_Y_z))
             x[2].copy_(XyZ(Y_term, Z, X_y_Z))
 
-            diagonal_copy_(s, contract(x, dim=0) + span_indicator[:, torch.arange(n), torch.arange(n) + w].unsqueeze(-1), w)
+            diagonal_copy_(s,
+                           contract(x, dim=0) + span_indicator[:, torch.arange(n), torch.arange(n) + w].unsqueeze(-1),
+                           w)
 
         logZ = contract(s[torch.arange(batch), 0, lens] + root)
 
@@ -215,4 +222,3 @@ class Faster_PCFG(PCFG_base):
 
         else:
             return {'partition': logZ}
-

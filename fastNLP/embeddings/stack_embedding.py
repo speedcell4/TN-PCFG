@@ -7,10 +7,9 @@ __all__ = [
     "StackEmbedding",
 ]
 
-from typing import List
-
 import torch
 from torch import nn as nn
+from typing import List
 
 from .embedding import TokenEmbedding
 
@@ -29,7 +28,7 @@ class StackEmbedding(TokenEmbedding):
         >>> embed = StackEmbedding([embed_1, embed_2])
 
     """
-    
+
     def __init__(self, embeds: List[TokenEmbedding], word_dropout=0, dropout=0):
         r"""
         
@@ -45,14 +44,14 @@ class StackEmbedding(TokenEmbedding):
         _vocab = vocabs[0]
         for vocab in vocabs[1:]:
             assert vocab == _vocab, "All embeddings in StackEmbedding should use the same word vocabulary."
-        
+
         super(StackEmbedding, self).__init__(_vocab, word_dropout=word_dropout, dropout=dropout)
         assert isinstance(embeds, list)
         for embed in embeds:
             assert isinstance(embed, TokenEmbedding), "Only TokenEmbedding type is supported."
         self.embeds = nn.ModuleList(embeds)
         self._embed_size = sum([embed.embed_size for embed in self.embeds])
-    
+
     def append(self, embed: TokenEmbedding):
         r"""
         添加一个embedding到结尾。
@@ -63,7 +62,7 @@ class StackEmbedding(TokenEmbedding):
         self._embed_size += embed.embed_size
         self.embeds.append(embed)
         return self
-    
+
     def pop(self):
         r"""
         弹出最后一个embed
@@ -72,7 +71,7 @@ class StackEmbedding(TokenEmbedding):
         embed = self.embeds.pop()
         self._embed_size -= embed.embed_size
         return embed
-    
+
     @property
     def embed_size(self):
         r"""
@@ -80,7 +79,7 @@ class StackEmbedding(TokenEmbedding):
         :return:
         """
         return self._embed_size
-    
+
     def forward(self, words):
         r"""
         得到多个embedding的结果，并把结果按照顺序concat起来。

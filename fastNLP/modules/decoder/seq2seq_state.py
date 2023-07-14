@@ -9,8 +9,8 @@ __all__ = [
     "TransformerState"
 ]
 
-from typing import Union
 import torch
+from typing import Union
 
 
 class State:
@@ -141,5 +141,3 @@ class TransformerState(State):
         if self.decoder_prev_key[0] is not None:
             return self.decoder_prev_key[0].size(1)
         return 0
-
-

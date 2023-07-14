@@ -74,8 +74,6 @@ def stripe_with_headword(x, n, w, offset=(0, 0), dim=1):
                         storage_offset=(offset[0] * seq_len + offset[1]) * numel)
 
 
-
-
 def stripe_with_headword_add_(x, y, n, w, offset=(0, 0), dim=1):
     x, seq_len = x.contiguous(), x.size(2)
     stride = list(x.stride())
@@ -190,15 +188,15 @@ def diagonal_with_headword(x, w):
     if len(x.shape) > 4:
         new_stride.extend(stride[4:])
         return x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[4:])),
-                     stride=new_stride,
-                     storage_offset=w * stride[2]
-                     )
+                            stride=new_stride,
+                            storage_offset=w * stride[2]
+                            )
     else:
         # new_stride.append(stride[3])
         return x.as_strided(size=(x.shape[0], seq_len - w, w),
-                     stride=new_stride,
-                     storage_offset=w * stride[2]
-                     )
+                            stride=new_stride,
+                            storage_offset=w * stride[2]
+                            )
 
 
 def diagonal_with_headword_add_(x, y, w):

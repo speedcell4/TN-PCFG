@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
+
 from parser.modules.res import ResLayer
 from ..pcfgs.pcfg import PCFG
+
 
 class NeuralPCFG(nn.Module):
     def __init__(self, args, dataset):
@@ -36,7 +38,6 @@ class NeuralPCFG(nn.Module):
         # I find this is important for neural/compound PCFG. if do not use this initialization, the performance would get much worser.
         self._initialize()
 
-
     def _initialize(self):
         for p in self.parameters():
             if p.dim() > 1:
@@ -53,7 +54,7 @@ class NeuralPCFG(nn.Module):
 
         def terms():
             term_prob = self.term_mlp(self.term_emb).log_softmax(-1)
-            return term_prob[torch.arange(self.T)[None,None], x[:, :, None]]
+            return term_prob[torch.arange(self.T)[None, None], x[:, :, None]]
 
         def rules():
             rule_prob = self.rule_mlp(self.nonterm_emb).log_softmax(-1)
@@ -67,12 +68,10 @@ class NeuralPCFG(nn.Module):
                 'rule': rule,
                 'kl': torch.tensor(0, device=self.device)}
 
-
     def loss(self, input):
         rules = self.forward(input)
-        result =  self.pcfg._inside(rules=rules, lens=input['seq_len'])
+        result = self.pcfg._inside(rules=rules, lens=input['seq_len'])
         return -result['partition'].mean()
-
 
     def evaluate(self, input, decode_type, **kwargs):
         rules = self.forward(input, evaluating=True)
@@ -82,4 +81,3 @@ class NeuralPCFG(nn.Module):
             return self.pcfg.decode(rules=rules, lens=input['seq_len'], viterbi=False, mbr=True)
         else:
             raise NotImplementedError
-

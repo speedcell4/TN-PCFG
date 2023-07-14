@@ -1,7 +1,7 @@
 r"""
 
 """
-__all__=[
+__all__ = [
     'BertTokenizer',
 
     "GPT2Tokenizer",

@@ -27,16 +27,23 @@ __all__ = [
     "get_sinusoid_encoding_table"
 ]
 
-from .embedding import Embedding, TokenEmbedding
-from .static_embedding import StaticEmbedding
-from .elmo_embedding import ElmoEmbedding
-from .bert_embedding import BertEmbedding, BertWordPieceEncoder
-from .roberta_embedding import RobertaEmbedding, RobertaWordPieceEncoder
-from .gpt2_embedding import GPT2WordPieceEncoder, GPT2Embedding
-from .char_embedding import CNNCharEmbedding, LSTMCharEmbedding
-from .stack_embedding import StackEmbedding
-from .utils import get_embeddings, get_sinusoid_encoding_table
-
 import sys
+
+from .bert_embedding import BertEmbedding
+from .bert_embedding import BertWordPieceEncoder
+from .char_embedding import CNNCharEmbedding
+from .char_embedding import LSTMCharEmbedding
+from .elmo_embedding import ElmoEmbedding
+from .embedding import Embedding
+from .embedding import TokenEmbedding
+from .gpt2_embedding import GPT2Embedding
+from .gpt2_embedding import GPT2WordPieceEncoder
+from .roberta_embedding import RobertaEmbedding
+from .roberta_embedding import RobertaWordPieceEncoder
+from .stack_embedding import StackEmbedding
+from .static_embedding import StaticEmbedding
+from .utils import get_embeddings
+from .utils import get_sinusoid_encoding_table
 from ..doc_utils import doc_process
+
 doc_process(sys.modules[__name__])

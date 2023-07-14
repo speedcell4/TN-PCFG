@@ -357,12 +357,12 @@ __all__ = [
 ]
 
 import _pickle as pickle
-from copy import deepcopy
-
 import numpy as np
+from copy import deepcopy
 from prettytable import PrettyTable
 
 from ._logger import logger
+from .collate_fn import Collater
 from .const import Const
 from .field import AppendToTargetOrInputException
 from .field import AutoPadder
@@ -370,7 +370,6 @@ from .field import FieldArray
 from .field import SetInputOrTargetException
 from .instance import Instance
 from .utils import pretty_table_printer
-from .collate_fn import Collater
 
 
 class ApplyResultException(Exception):
@@ -378,7 +377,8 @@ class ApplyResultException(Exception):
         super().__init__(msg)
         self.msg = msg
         self.index = index  # 标示在哪个数据遭遇到问题了
-    
+
+
 class DataSet(object):
     r"""
     fastNLP的数据容器，详细的使用方法见文档  :mod:`fastNLP.core.dataset`
@@ -537,7 +537,7 @@ class DataSet(object):
         :param pad_value: 该field的pad的值，仅在该field为input或target时有意义
         :return:
         """
-        if len(self.field_arrays)>0:
+        if len(self.field_arrays) > 0:
             field_names = ['field_names']
             is_inputs = ['is_input']
             is_targets = ['is_target']
@@ -589,7 +589,7 @@ class DataSet(object):
             if len(self.field_arrays) != len(instance.fields):
                 raise ValueError(
                     "DataSet object has {} fields, but attempt to append an Instance object with {} fields."
-                        .format(len(self.field_arrays), len(instance.fields)))
+                    .format(len(self.field_arrays), len(instance.fields)))
             for name, field in instance.fields.items():
                 assert name in self.field_arrays
                 try:
@@ -885,7 +885,7 @@ class DataSet(object):
         if not self.has_field(field_name=field_name):
             raise KeyError("DataSet has no field named `{}`.".format(field_name))
         return self.apply_more(func, modify_fields, _apply_field=field_name, **kwargs)
-    
+
     def _add_apply_field(self, results, new_field_name, kwargs):
         r"""
         将results作为加入到新的field中，field名称为new_field_name
@@ -972,11 +972,11 @@ class DataSet(object):
                     logger.error(e.msg)
                 logger.error("Exception happens at the `{}`th instance.".format(idx))
             raise e
-    
+
         if modify_fields is True:
             for field, result in results.items():
                 self._add_apply_field(result, field, kwargs)
-    
+
         return results
 
     def apply(self, func, new_field_name=None, **kwargs):

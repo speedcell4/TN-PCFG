@@ -5,17 +5,17 @@ __all__ = [
     "allowed_transitions"
 ]
 
-from typing import Union
-
 import torch
 from torch import nn
+from typing import Union
 
 from ..utils import initial_parameter
-from ...core.metrics import _get_encoding_type_from_tag_vocab, _check_tag_vocab_and_encoding_type
+from ...core.metrics import _check_tag_vocab_and_encoding_type
+from ...core.metrics import _get_encoding_type_from_tag_vocab
 from ...core.vocabulary import Vocabulary
 
 
-def allowed_transitions(tag_vocab:Union[Vocabulary, dict], encoding_type=None, include_start_end=False):
+def allowed_transitions(tag_vocab: Union[Vocabulary, dict], encoding_type=None, include_start_end=False):
     r"""
     给定一个id到label的映射表，返回所有可以跳转的(from_tag_id, to_tag_id)列表。
 
@@ -49,6 +49,7 @@ def allowed_transitions(tag_vocab:Union[Vocabulary, dict], encoding_type=None, i
     allowed_trans = []
     if include_start_end:
         id_label_lst += [(start_idx, 'start'), (end_idx, 'end')]
+
     def split_tag_label(from_label):
         from_label = from_label.lower()
         if from_label in ['start', 'end']:

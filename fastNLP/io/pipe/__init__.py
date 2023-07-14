@@ -9,9 +9,9 @@ Pipe用于处理通过 Loader 读取的数据，所有的 Pipe 都包含 ``proce
 """
 __all__ = [
     "Pipe",
-    
+
     "CWSPipe",
-    
+
     "CLSBasePipe",
     "AGsNewsPipe",
     "DBPediaPipe",
@@ -23,14 +23,14 @@ __all__ = [
     "ChnSentiCorpPipe",
     "THUCNewsPipe",
     "WeiboSenti100kPipe",
-    
+
     "Conll2003NERPipe",
     "OntoNotesNERPipe",
     "MsraNERPipe",
     "WeiboNERPipe",
     "PeopleDailyPipe",
     "Conll2003Pipe",
-    
+
     "MatchingBertPipe",
     "RTEBertPipe",
     "SNLIBertPipe",
@@ -52,20 +52,51 @@ __all__ = [
     "RenamePipe",
     "GranularizePipe",
     "MachingTruncatePipe",
-    
+
     "CoReferencePipe",
 
     "CMRC2018BertPipe"
 ]
 
-from .classification import CLSBasePipe, YelpFullPipe, YelpPolarityPipe, SSTPipe, SST2Pipe, IMDBPipe, ChnSentiCorpPipe, THUCNewsPipe, \
-    WeiboSenti100kPipe, AGsNewsPipe, DBPediaPipe
-from .conll import Conll2003NERPipe, OntoNotesNERPipe, MsraNERPipe, WeiboNERPipe, PeopleDailyPipe
+from .classification import AGsNewsPipe
+from .classification import ChnSentiCorpPipe
+from .classification import CLSBasePipe
+from .classification import DBPediaPipe
+from .classification import IMDBPipe
+from .classification import SST2Pipe
+from .classification import SSTPipe
+from .classification import THUCNewsPipe
+from .classification import WeiboSenti100kPipe
+from .classification import YelpFullPipe
+from .classification import YelpPolarityPipe
+from .conll import Conll2003NERPipe
 from .conll import Conll2003Pipe
+from .conll import MsraNERPipe
+from .conll import OntoNotesNERPipe
+from .conll import PeopleDailyPipe
+from .conll import WeiboNERPipe
 from .coreference import CoReferencePipe
 from .cws import CWSPipe
-from .matching import MatchingBertPipe, RTEBertPipe, SNLIBertPipe, QuoraBertPipe, QNLIBertPipe, MNLIBertPipe, \
-    MatchingPipe, RTEPipe, SNLIPipe, QuoraPipe, QNLIPipe, MNLIPipe, CNXNLIBertPipe, CNXNLIPipe, BQCorpusBertPipe, \
-    LCQMCPipe, BQCorpusPipe, LCQMCBertPipe, RenamePipe, GranularizePipe, MachingTruncatePipe
+from .matching import BQCorpusBertPipe
+from .matching import BQCorpusPipe
+from .matching import CNXNLIBertPipe
+from .matching import CNXNLIPipe
+from .matching import GranularizePipe
+from .matching import LCQMCBertPipe
+from .matching import LCQMCPipe
+from .matching import MachingTruncatePipe
+from .matching import MatchingBertPipe
+from .matching import MatchingPipe
+from .matching import MNLIBertPipe
+from .matching import MNLIPipe
+from .matching import QNLIBertPipe
+from .matching import QNLIPipe
+from .matching import QuoraBertPipe
+from .matching import QuoraPipe
+from .matching import RenamePipe
+from .matching import RTEBertPipe
+from .matching import RTEPipe
+from .matching import SNLIBertPipe
+from .matching import SNLIPipe
 from .pipe import Pipe
 from .qa import CMRC2018BertPipe

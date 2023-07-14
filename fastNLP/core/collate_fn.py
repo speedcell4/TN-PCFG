@@ -1,11 +1,11 @@
 r"""undocumented"""
-from builtins import sorted
-
-import torch
 import numpy as np
+import torch
+from builtins import sorted
+from copy import deepcopy
+
 from .field import _get_ele_type_and_dim
 from .utils import logger
-from copy import deepcopy
 
 
 def _check_type(batch_dict, fields):
@@ -41,6 +41,7 @@ class Collater:
     辅助DataSet管理collate_fn的类
 
     """
+
     def __init__(self):
         self.collate_fns = {}
 

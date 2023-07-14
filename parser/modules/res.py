@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+
 class ResLayer(nn.Module):
     def __init__(self, in_dim, out_dim):
         super(ResLayer, self).__init__()
@@ -12,4 +13,3 @@ class ResLayer(nn.Module):
 
     def forward(self, x):
         return self.linear(x) + x
-

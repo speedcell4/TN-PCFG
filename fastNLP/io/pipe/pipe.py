@@ -21,7 +21,7 @@ class Pipe:
     -process_from_file()函数，输入为对应Loader的load函数可接受的类型。
 
     """
-    
+
     def process(self, data_bundle: DataBundle) -> DataBundle:
         r"""
         对输入的DataBundle进行处理，然后返回该DataBundle。

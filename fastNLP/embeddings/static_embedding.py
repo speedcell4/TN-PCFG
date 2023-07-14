@@ -6,23 +6,24 @@ r"""
 __all__ = [
     "StaticEmbedding"
 ]
+
+import json
+import numpy as np
 import os
+import torch
+import torch.nn as nn
 import warnings
 from collections import defaultdict
 from copy import deepcopy
-import json
 from typing import Union
-
-import numpy as np
-import torch
-import torch.nn as nn
 
 from .embedding import TokenEmbedding
 from ..core import logger
 from ..core.vocabulary import Vocabulary
-from ..io.file_utils import PRETRAIN_STATIC_FILES, _get_embedding_url, cached_path
+from ..io.file_utils import _get_embedding_url
 from ..io.file_utils import _get_file_name_base_on_postfix
-
+from ..io.file_utils import cached_path
+from ..io.file_utils import PRETRAIN_STATIC_FILES
 
 VOCAB_FILENAME = 'vocab.txt'
 STATIC_HYPER_FILENAME = 'static_hyper.json'
@@ -76,8 +77,9 @@ class StaticEmbedding(TokenEmbedding):
                    grad_fn=<EmbeddingBackward>)  # 每种word的输出是一致的。
 
     """
-    
-    def __init__(self, vocab: Vocabulary, model_dir_or_name: Union[str, None] = 'en', embedding_dim=-1, requires_grad: bool = True,
+
+    def __init__(self, vocab: Vocabulary, model_dir_or_name: Union[str, None] = 'en', embedding_dim=-1,
+                 requires_grad: bool = True,
                  init_method=None, lower=False, dropout=0, word_dropout=0, normalize=False, min_freq=1, **kwargs):
         r"""
         
@@ -104,10 +106,10 @@ class StaticEmbedding(TokenEmbedding):
         if embedding_dim > 0:
             if model_dir_or_name:
                 logger.info(f"StaticEmbedding will ignore `model_dir_or_name`, and randomly initialize embedding with"
-                              f" dimension {embedding_dim}. If you want to use pre-trained embedding, "
-                              f"set `embedding_dim` to 0.")
+                            f" dimension {embedding_dim}. If you want to use pre-trained embedding, "
+                            f"set `embedding_dim` to 0.")
             model_dir_or_name = None
-        
+
         # 得到cache_path
         if model_dir_or_name is None:
             assert embedding_dim >= 1, "The dimension of embedding should be larger than 1."
@@ -141,7 +143,7 @@ class StaticEmbedding(TokenEmbedding):
                     if lowered_word_count[word.lower()] >= min_freq and word_count < min_freq:
                         truncated_vocab.add_word_lst([word] * (min_freq - word_count),
                                                      no_create_entry=truncated_vocab._is_word_no_create_entry(word))
-            
+
             # 只限制在train里面的词语使用min_freq筛选
             if kwargs.get('only_train_min_freq', False) and model_dir_or_name is not None:
                 for word in truncated_vocab.word_count.keys():
@@ -166,7 +168,7 @@ class StaticEmbedding(TokenEmbedding):
                 else:
                     lowered_vocab.add_word(word.lower())  # 先加入需要创建entry的
             logger.info(f"All word in the vocab have been lowered. There are {len(vocab)} words, {len(lowered_vocab)} "
-                  f"unique lowered words.")
+                        f"unique lowered words.")
             if model_path:
                 embedding = self._load_with_vocab(model_path, vocab=lowered_vocab, init_method=init_method)
             else:
@@ -194,7 +196,7 @@ class StaticEmbedding(TokenEmbedding):
                 self.register_buffer('words_to_words', torch.arange(len(vocab)).long())
         if not self.only_norm_found_vector and normalize:
             embedding /= (torch.norm(embedding, dim=1, keepdim=True) + 1e-12)
-        
+
         if truncate_vocab:
             for i in range(len(truncated_words_to_words)):
                 index_in_truncated_vocab = truncated_words_to_words[i]
@@ -212,7 +214,7 @@ class StaticEmbedding(TokenEmbedding):
     @property
     def weight(self):
         return self.embedding.weight
-    
+
     def _randomly_init_embed(self, num_embedding, embedding_dim, init_embed=None):
         r"""
 
@@ -222,14 +224,14 @@ class StaticEmbedding(TokenEmbedding):
         :return: torch.FloatTensor
         """
         embed = torch.zeros(num_embedding, embedding_dim)
-        
+
         if init_embed is None:
             nn.init.uniform_(embed, -np.sqrt(3 / embedding_dim), np.sqrt(3 / embedding_dim))
         else:
             init_embed(embed)
-        
+
         return embed
-    
+
     def _load_with_vocab(self, embed_filepath, vocab, dtype=np.float32, padding='<pad>', unknown='<unk>',
                          error='ignore', init_method=None):
         r"""
@@ -300,13 +302,14 @@ class StaticEmbedding(TokenEmbedding):
                             matrix[index] = None
             # matrix中代表是需要建立entry的词
             vectors = self._randomly_init_embed(len(matrix), dim, init_method)
-            
+
             if vocab.unknown is None:  # 创建一个专门的unknown
                 unknown_idx = len(matrix)
                 vectors = torch.cat((vectors, torch.zeros(1, dim)), dim=0).contiguous()
             else:
                 unknown_idx = vocab.unknown_idx
-            self.register_buffer('words_to_words', torch.full((len(vocab), ), fill_value=unknown_idx, dtype=torch.long).long())
+            self.register_buffer('words_to_words',
+                                 torch.full((len(vocab),), fill_value=unknown_idx, dtype=torch.long).long())
             index = 0
             for word, index_in_vocab in vocab:
                 if index_in_vocab in matrix:
@@ -317,7 +320,7 @@ class StaticEmbedding(TokenEmbedding):
                     index += 1
 
             return vectors
-    
+
     def forward(self, words):
         r"""
         传入words的index
@@ -357,7 +360,7 @@ class StaticEmbedding(TokenEmbedding):
             json.dump(kwargs, f, indent=2)
 
         with open(os.path.join(folder, STATIC_EMBED_FILENAME), 'w', encoding='utf-8') as f:
-            f.write('{}\n'.format(' '*30))  # 留白之后再来填写
+            f.write('{}\n'.format(' ' * 30))  # 留白之后再来填写
             word_count = 0
             saved_word = {}
             valid_word_count = 0
@@ -371,7 +374,7 @@ class StaticEmbedding(TokenEmbedding):
                         continue
                     saved_word[word] = 1
                     vec_i = self.words_to_words[i]
-                    if vec_i==vocab.unknown_idx and i!=vocab.unknown_idx:
+                    if vec_i == vocab.unknown_idx and i != vocab.unknown_idx:
                         continue
                     vec = self.embedding.weight.data[vec_i].tolist()
                     vec_str = ' '.join(map(str, vec))
@@ -398,4 +401,3 @@ class StaticEmbedding(TokenEmbedding):
         logger.info(f"Load StaticEmbedding from {folder}.")
         embed = cls(vocab=vocab, model_dir_or_name=os.path.join(folder, STATIC_EMBED_FILENAME), **hyper)
         return embed
-

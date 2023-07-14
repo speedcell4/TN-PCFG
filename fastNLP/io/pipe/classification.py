@@ -16,15 +16,25 @@ __all__ = [
 
 import re
 import warnings
-
 from nltk import Tree
 
 from .pipe import Pipe
-from .utils import get_tokenizer, _indexize, _add_words_field, _add_chars_field, _granularize
+from .utils import _add_chars_field
+from .utils import _add_words_field
+from .utils import _granularize
+from .utils import _indexize
+from .utils import get_tokenizer
 from ..data_bundle import DataBundle
-from ..loader.classification import ChnSentiCorpLoader, THUCNewsLoader, WeiboSenti100kLoader
-from ..loader.classification import IMDBLoader, YelpFullLoader, SSTLoader, SST2Loader, YelpPolarityLoader, \
-    AGsNewsLoader, DBPediaLoader
+from ..loader.classification import AGsNewsLoader
+from ..loader.classification import ChnSentiCorpLoader
+from ..loader.classification import DBPediaLoader
+from ..loader.classification import IMDBLoader
+from ..loader.classification import SST2Loader
+from ..loader.classification import SSTLoader
+from ..loader.classification import THUCNewsLoader
+from ..loader.classification import WeiboSenti100kLoader
+from ..loader.classification import YelpFullLoader
+from ..loader.classification import YelpPolarityLoader
 from ...core._logger import logger
 from ...core.const import Const
 from ...core.dataset import DataSet
@@ -33,7 +43,7 @@ from ...core.instance import Instance
 
 class CLSBasePipe(Pipe):
 
-    def __init__(self, lower: bool=False, tokenizer: str='spacy', lang='en'):
+    def __init__(self, lower: bool = False, tokenizer: str = 'spacy', lang='en'):
         super().__init__()
         self.lower = lower
         self.tokenizer = get_tokenizer(tokenizer, lang=lang)
@@ -115,7 +125,7 @@ class YelpFullPipe(CLSBasePipe):
         +-------------+-----------+--------+-------+---------+
 
     """
-    
+
     def __init__(self, lower: bool = False, granularity=5, tokenizer: str = 'spacy'):
         r"""
         
@@ -127,14 +137,14 @@ class YelpFullPipe(CLSBasePipe):
         super().__init__(lower=lower, tokenizer=tokenizer, lang='en')
         assert granularity in (2, 3, 5), "granularity can only be 2,3,5."
         self.granularity = granularity
-        
+
         if granularity == 2:
             self.tag_map = {"1": "negative", "2": "negative", "4": "positive", "5": "positive"}
         elif granularity == 3:
             self.tag_map = {"1": "negative", "2": "negative", "3": "medium", "4": "positive", "5": "positive"}
         else:
             self.tag_map = None
-    
+
     def process(self, data_bundle):
         r"""
         传入的DataSet应该具备如下的结构
@@ -153,9 +163,9 @@ class YelpFullPipe(CLSBasePipe):
             data_bundle = _granularize(data_bundle, self.tag_map)
 
         data_bundle = super().process(data_bundle)
-        
+
         return data_bundle
-    
+
     def process_from_file(self, paths=None):
         r"""
 
@@ -189,7 +199,7 @@ class YelpPolarityPipe(CLSBasePipe):
         +-------------+-----------+--------+-------+---------+
 
     """
-    
+
     def __init__(self, lower: bool = False, tokenizer: str = 'spacy'):
         r"""
         
@@ -197,7 +207,7 @@ class YelpPolarityPipe(CLSBasePipe):
         :param str tokenizer: 使用哪种tokenize方式将数据切成单词。支持'spacy'和'raw'。raw使用空格作为切分。
         """
         super().__init__(lower=lower, tokenizer=tokenizer, lang='en')
-    
+
     def process_from_file(self, paths=None):
         r"""
 
@@ -313,7 +323,7 @@ class SSTPipe(CLSBasePipe):
         +-------------+-----------+--------+-------+---------+
 
     """
-    
+
     def __init__(self, subtree=False, train_subtree=True, lower=False, granularity=5, tokenizer='spacy'):
         r"""
         
@@ -330,14 +340,14 @@ class SSTPipe(CLSBasePipe):
         self.lower = lower
         assert granularity in (2, 3, 5), "granularity can only be 2,3,5."
         self.granularity = granularity
-        
+
         if granularity == 2:
             self.tag_map = {"0": "negative", "1": "negative", "3": "positive", "4": "positive"}
         elif granularity == 3:
             self.tag_map = {"0": "negative", "1": "negative", "2": "medium", "3": "positive", "4": "positive"}
         else:
             self.tag_map = None
-    
+
     def process(self, data_bundle: DataBundle):
         r"""
         对DataBundle中的数据进行预处理。输入的DataSet应该至少拥有raw_words这一列，且内容类似与
@@ -372,11 +382,11 @@ class SSTPipe(CLSBasePipe):
 
         # 根据granularity设置tag
         data_bundle = _granularize(data_bundle, tag_map=self.tag_map)
-        
+
         data_bundle = super().process(data_bundle)
-        
+
         return data_bundle
-    
+
     def process_from_file(self, paths=None):
         data_bundle = SSTLoader().load(paths)
         return self.process(data_bundle=data_bundle)
@@ -405,7 +415,7 @@ class SST2Pipe(CLSBasePipe):
         +-------------+-----------+--------+-------+---------+
 
     """
-    
+
     def __init__(self, lower=False, tokenizer='spacy'):
         r"""
         
@@ -413,7 +423,7 @@ class SST2Pipe(CLSBasePipe):
         :param str tokenizer: 使用哪种tokenize方式将数据切成单词。支持'spacy'和'raw'。raw使用空格作为切分。
         """
         super().__init__(lower=lower, tokenizer=tokenizer, lang='en')
-    
+
     def process_from_file(self, paths=None):
         r"""
 
@@ -450,7 +460,7 @@ class IMDBPipe(CLSBasePipe):
         +-------------+-----------+--------+-------+---------+
 
     """
-    
+
     def __init__(self, lower: bool = False, tokenizer: str = 'spacy'):
         r"""
         
@@ -459,7 +469,7 @@ class IMDBPipe(CLSBasePipe):
         """
         super().__init__(tokenizer=tokenizer, lang='en')
         self.lower = lower
-    
+
     def process(self, data_bundle: DataBundle):
         r"""
         期待的DataBunlde中输入的DataSet应该类似于如下，有两个field，raw_words和target，且均为str类型
@@ -475,19 +485,19 @@ class IMDBPipe(CLSBasePipe):
             target列应该为str。
         :return: DataBundle
         """
-        
+
         # 替换<br />
         def replace_br(raw_words):
             raw_words = raw_words.replace("<br />", ' ')
             return raw_words
-        
+
         for name, dataset in data_bundle.datasets.items():
             dataset.apply_field(replace_br, field_name=Const.RAW_WORD, new_field_name=Const.RAW_WORD)
-        
+
         data_bundle = super().process(data_bundle)
-        
+
         return data_bundle
-    
+
     def process_from_file(self, paths=None):
         r"""
 
@@ -497,7 +507,7 @@ class IMDBPipe(CLSBasePipe):
         # 读取数据
         data_bundle = IMDBLoader().load(paths)
         data_bundle = self.process(data_bundle)
-        
+
         return data_bundle
 
 
@@ -525,6 +535,7 @@ class ChnSentiCorpPipe(Pipe):
         +-------------+-----------+--------+-------+---------+
 
     """
+
     def __init__(self, bigrams=False, trigrams=False):
         r"""
         
@@ -550,7 +561,7 @@ class ChnSentiCorpPipe(Pipe):
         data_bundle.apply_field(list, field_name=Const.CHAR_INPUT, new_field_name=Const.CHAR_INPUT)
         return data_bundle
 
-    def process(self, data_bundle:DataBundle):
+    def process(self, data_bundle: DataBundle):
         r"""
         可以处理的DataSet应该具备以下的field
 
@@ -671,7 +682,8 @@ class THUCNewsPipe(CLSBasePipe):
         :return:
         """
         # 根据granularity设置tag
-        tag_map = {'体育': 0, '财经': 1, '房产': 2, '家居': 3, '教育': 4, '科技': 5, '时尚': 6, '时政': 7, '游戏': 8, '娱乐': 9}
+        tag_map = {'体育': 0, '财经': 1, '房产': 2, '家居': 3, '教育': 4, '科技': 5, '时尚': 6, '时政': 7, '游戏': 8,
+                   '娱乐': 9}
         data_bundle = _granularize(data_bundle=data_bundle, tag_map=tag_map)
 
         # clean,lower
@@ -822,4 +834,3 @@ class WeiboSenti100kPipe(CLSBasePipe):
         data_bundle = data_loader.load(paths)
         data_bundle = self.process(data_bundle)
         return data_bundle
-

@@ -3,13 +3,12 @@ r"""
 
 """
 
-
 from copy import deepcopy
 
 from .pipe import Pipe
+from .utils import get_tokenizer
 from .. import DataBundle
 from ..loader.qa import CMRC2018Loader
-from .utils import get_tokenizer
 from ...core import DataSet
 from ...core import Vocabulary
 
@@ -106,6 +105,7 @@ class CMRC2018BertPipe(Pipe):
         +-------------+-------------+-----------+--------------+------------+-------+---------+
     
     """
+
     def __init__(self, max_len=510):
         super().__init__()
         self.max_len = max_len

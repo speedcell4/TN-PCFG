@@ -4,6 +4,7 @@ __all__ = [
     "ConvolutionCharEncoder",
     "LSTMCharEncoder"
 ]
+
 import torch
 import torch.nn as nn
 

@@ -13,7 +13,8 @@ __all__ = [
 
 import os
 import warnings
-from typing import Union, Dict
+from typing import Dict
+from typing import Union
 
 from .csv import CSVLoader
 from .json import JsonLoader
@@ -47,10 +48,10 @@ class MNLILoader(Loader):
        "...", "...", "..."
 
     """
-    
+
     def __init__(self):
         super().__init__()
-    
+
     def _load(self, path: str):
         ds = DataSet()
         with open(path, 'r', encoding='utf-8') as f:
@@ -78,7 +79,7 @@ class MNLILoader(Loader):
                         if raw_words1 and raw_words2 and target:
                             ds.append(Instance(raw_words1=raw_words1, raw_words2=raw_words2, target=target, index=idx))
         return ds
-    
+
     def load(self, paths: str = None):
         r"""
 
@@ -92,13 +93,13 @@ class MNLILoader(Loader):
             paths = self.download()
         if not os.path.isdir(paths):
             raise NotADirectoryError(f"{paths} is not a valid directory.")
-        
+
         files = {'dev_matched': "dev_matched.tsv",
                  "dev_mismatched": "dev_mismatched.tsv",
                  "test_matched": "test_matched.tsv",
                  "test_mismatched": "test_mismatched.tsv",
                  "train": 'train.tsv'}
-        
+
         datasets = {}
         for name, filename in files.items():
             filepath = os.path.join(paths, filename)
@@ -106,11 +107,11 @@ class MNLILoader(Loader):
                 if 'test' not in name:
                     raise FileNotFoundError(f"{name} not found in directory {filepath}.")
             datasets[name] = self._load(filepath)
-        
+
         data_bundle = DataBundle(datasets=datasets)
-        
+
         return data_bundle
-    
+
     def download(self):
         r"""
         如果你使用了这个数据，请引用
@@ -148,14 +149,14 @@ class SNLILoader(JsonLoader):
        "...", "...", "..."
 
     """
-    
+
     def __init__(self):
         super().__init__(fields={
             'sentence1': Const.RAW_WORDS(0),
             'sentence2': Const.RAW_WORDS(1),
             'gold_label': Const.TARGET,
         })
-    
+
     def load(self, paths: Union[str, Dict[str, str]] = None) -> DataBundle:
         r"""
         从指定一个或多个路径中的文件中读取数据，返回 :class:`~fastNLP.io.DataBundle` 。
@@ -181,11 +182,11 @@ class SNLILoader(JsonLoader):
                 paths = _paths
             else:
                 raise NotADirectoryError(f"{paths} is not a valid directory.")
-        
+
         datasets = {name: self._load(path) for name, path in paths.items()}
         data_bundle = DataBundle(datasets=datasets)
         return data_bundle
-    
+
     def download(self):
         r"""
         如果您的文章使用了这份数据，请引用
@@ -218,13 +219,13 @@ class QNLILoader(JsonLoader):
     test数据集没有target列
 
     """
-    
+
     def __init__(self):
         super().__init__()
-    
+
     def _load(self, path):
         ds = DataSet()
-        
+
         with open(path, 'r', encoding='utf-8') as f:
             f.readline()  # 跳过header
             if path.endswith("test.tsv"):
@@ -248,7 +249,7 @@ class QNLILoader(JsonLoader):
                         if raw_words1 and raw_words2 and target:
                             ds.append(Instance(raw_words1=raw_words1, raw_words2=raw_words2, target=target))
         return ds
-    
+
     def download(self):
         r"""
         如果您的实验使用到了该数据，请引用
@@ -280,13 +281,13 @@ class RTELoader(Loader):
 
     test数据集没有target列
     """
-    
+
     def __init__(self):
         super().__init__()
-    
+
     def _load(self, path: str):
         ds = DataSet()
-        
+
         with open(path, 'r', encoding='utf-8') as f:
             f.readline()  # 跳过header
             if path.endswith("test.tsv"):
@@ -310,7 +311,7 @@ class RTELoader(Loader):
                         if raw_words1 and raw_words2 and target:
                             ds.append(Instance(raw_words1=raw_words1, raw_words2=raw_words2, target=target))
         return ds
-    
+
     def download(self):
         r"""
         如果您的实验使用到了该数据，请引用GLUE Benchmark
@@ -344,13 +345,13 @@ class QuoraLoader(Loader):
         "...","...","..."
 
     """
-    
+
     def __init__(self):
         super().__init__()
-    
+
     def _load(self, path: str):
         ds = DataSet()
-        
+
         with open(path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
@@ -362,7 +363,7 @@ class QuoraLoader(Loader):
                     if raw_words1 and raw_words2 and target:
                         ds.append(Instance(raw_words1=raw_words1, raw_words2=raw_words2, target=target))
         return ds
-    
+
     def download(self):
         r"""
         由于版权限制，不能提供自动下载功能。可参考
@@ -415,7 +416,8 @@ class CNXNLILoader(Loader):
                 gold_label = raw_instance[gold_label_index]
                 language = raw_instance[language_index]
                 if sentence1:
-                    ds_all.append(Instance(sentence1=sentence1, sentence2=sentence2, gold_label=gold_label, language=language))
+                    ds_all.append(
+                        Instance(sentence1=sentence1, sentence2=sentence2, gold_label=gold_label, language=language))
 
         ds_zh = DataSet()
         for i in ds_all:
@@ -431,7 +433,7 @@ class CNXNLILoader(Loader):
             next(f)
             for line in f:
                 raw_instance = line.strip().split('\t')
-                premise = "".join(raw_instance[0].split())# 把已经分好词的premise和hypo强制还原为character segmentation
+                premise = "".join(raw_instance[0].split())  # 把已经分好词的premise和hypo强制还原为character segmentation
                 hypo = "".join(raw_instance[1].split())
                 label = "".join(raw_instance[-1].split())
                 if premise:
@@ -574,5 +576,3 @@ class LCQMCLoader(Loader):
         :return:
         """
         raise RuntimeError("LCQMC cannot be downloaded automatically.")
-
-

@@ -13,11 +13,11 @@ r"""
 """
 __all__ = [
     'DataBundle',
-    
+
     'EmbedLoader',
-    
+
     'Loader',
-    
+
     'CLSBaseLoader',
     'AGsNewsLoader',
     'DBPediaLoader',
@@ -77,14 +77,14 @@ __all__ = [
     "WeiboNERPipe",
 
     "CWSPipe",
-    
+
     "Conll2003NERPipe",
     "OntoNotesNERPipe",
     "MsraNERPipe",
     "WeiboNERPipe",
     "PeopleDailyPipe",
     "Conll2003Pipe",
-    
+
     "MatchingBertPipe",
     "RTEBertPipe",
     "SNLIBertPipe",
@@ -119,7 +119,8 @@ import sys
 from .data_bundle import DataBundle
 from .embed_loader import EmbedLoader
 from .loader import *
-from .model_io import ModelLoader, ModelSaver
+from .model_io import ModelLoader
+from .model_io import ModelSaver
 from .pipe import *
 from ..doc_utils import doc_process
 

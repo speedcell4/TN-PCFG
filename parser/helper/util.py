@@ -1,11 +1,16 @@
-import time
-import os
 import logging
+import os
+import time
+import torch
 from distutils.dir_util import copy_tree
 
-from parser.model import NeuralPCFG, CompoundPCFG, TNPCFG, NeuralBLPCFG, NeuralLPCFG, FastTNPCFG, FastNBLPCFG
-
-import torch
+from parser.model import CompoundPCFG
+from parser.model import FastNBLPCFG
+from parser.model import FastTNPCFG
+from parser.model import NeuralBLPCFG
+from parser.model import NeuralLPCFG
+from parser.model import NeuralPCFG
+from parser.model import TNPCFG
 
 
 def get_model(args, dataset):
@@ -40,11 +45,13 @@ def get_optimizer(args, model):
     if args.name == 'adam':
         return torch.optim.Adam(params=model.parameters(), lr=args.lr, betas=(args.mu, args.nu))
     elif args.name == 'adamw':
-        return torch.optim.AdamW(params=model.parameters(), lr=args.lr, betas=(args.mu, args.nu), weight_decay=args.weight_decay)
+        return torch.optim.AdamW(params=model.parameters(), lr=args.lr, betas=(args.mu, args.nu),
+                                 weight_decay=args.weight_decay)
     else:
         raise NotImplementedError
 
-def get_logger(args, log_name='train',path=None):
+
+def get_logger(args, log_name='train', path=None):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -66,7 +73,7 @@ def get_logger(args, log_name='train',path=None):
 def create_save_path(args):
     model_name = args.model.model_name
     suffix = "/{}".format(model_name) + time.strftime("%Y-%m-%d-%H_%M_%S",
-                                                                             time.localtime(time.time()))
+                                                      time.localtime(time.time()))
     from pathlib import Path
     saved_name = Path(args.save_dir).stem + suffix
     args.save_dir = args.save_dir + suffix
@@ -81,5 +88,4 @@ def create_save_path(args):
     shutil.copyfile(args.conf, args.save_dir + "/config.yaml")
     os.makedirs(args.save_dir + "/parser")
     copy_tree("parser/", args.save_dir + "/parser")
-    return  saved_name
-
+    return saved_name

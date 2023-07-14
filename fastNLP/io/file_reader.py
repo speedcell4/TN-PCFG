@@ -4,8 +4,8 @@ r"""undocumented
 
 __all__ = []
 
-import json
 import csv
+import json
 
 from ..core import logger
 
@@ -81,7 +81,7 @@ def _read_json(path, encoding='utf-8', fields=None, dropna=True):
             yield line_idx, _res
 
 
-def _read_conll(path, encoding='utf-8',sep=None, indexes=None, dropna=True):
+def _read_conll(path, encoding='utf-8', sep=None, indexes=None, dropna=True):
     r"""
     Construct a generator to read conll items.
     :param path: file path
@@ -92,6 +92,7 @@ def _read_conll(path, encoding='utf-8',sep=None, indexes=None, dropna=True):
             :if False, raise ValueError when reading invalid data. default: True
     :return: generator, every time yield (line number, conll item)
     """
+
     def parse_conll(sample):
         sample = list(map(list, zip(*sample)))
         sample = [sample[i] for i in indexes]
@@ -99,7 +100,6 @@ def _read_conll(path, encoding='utf-8',sep=None, indexes=None, dropna=True):
             if len(f) <= 0:
                 raise ValueError('empty field')
         return sample
-
 
     with open(path, 'r', encoding=encoding) as f:
         sample = []

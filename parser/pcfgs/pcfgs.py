@@ -1,5 +1,9 @@
 import torch
-from parser.pcfgs.fn import  stripe, diagonal_copy_, diagonal
+
+from parser.pcfgs.fn import diagonal
+from parser.pcfgs.fn import diagonal_copy_
+from parser.pcfgs.fn import stripe
+
 
 class PCFG_base():
 
@@ -12,7 +16,6 @@ class PCFG_base():
     @torch.enable_grad()
     def decode(self, rules, lens, viterbi=False, mbr=False):
         return self._inside(rules=rules, lens=lens, viterbi=viterbi, mbr=mbr)
-
 
     def _get_prediction(self, logZ, span_indicator, lens, mbr=False):
         batch, seq_len = span_indicator.shape[:2]
@@ -29,7 +32,6 @@ class PCFG_base():
                 for span in viterbi_spans:
                     prediction[span[0]].append((span[1], span[2]))
         return prediction
-
 
     @torch.no_grad()
     def _cky_zero_order(self, marginals, lens):
@@ -95,44 +97,43 @@ class PCFG_base():
             ] for _ in range(2)
         ]
         alpha[A][C][L][:, :, 0] = 0
-        alpha[B][C][L][:, :, -1] =  0
-        alpha[A][C][R][:, :, 0] =  0
+        alpha[B][C][L][:, :, -1] = 0
+        alpha[A][C][R][:, :, 0] = 0
         alpha[B][C][R][:, :, -1] = 0
         semiring_plus = self.get_plus_semiring(viterbi=True)
         # single root.
         start_idx = 1
-        for k in range(1, N-start_idx):
-            f = torch.arange(start_idx, N - k), torch.arange(k+start_idx, N)
+        for k in range(1, N - start_idx):
+            f = torch.arange(start_idx, N - k), torch.arange(k + start_idx, N)
             ACL = alpha[A][C][L][:, start_idx: N - k, :k]
-            ACR = alpha[A][C][R][:,  start_idx: N - k, :k]
-            BCL = alpha[B][C][L][:,  start_idx+k:, N - k:]
-            BCR = alpha[B][C][R][:,  start_idx+k:, N - k :]
+            ACR = alpha[A][C][R][:, start_idx: N - k, :k]
+            BCL = alpha[B][C][L][:, start_idx + k:, N - k:]
+            BCR = alpha[B][C][R][:, start_idx + k:, N - k:]
             x = semiring_plus(ACR + BCL, dim=2)
             arcs_l = x + attach[:, f[1], f[0]]
-            alpha[A][I][L][:,  start_idx: N - k, k] = arcs_l
-            alpha[B][I][L][:, k+start_idx:N, N - k - 1] = arcs_l
+            alpha[A][I][L][:, start_idx: N - k, k] = arcs_l
+            alpha[B][I][L][:, k + start_idx:N, N - k - 1] = arcs_l
             x = semiring_plus(ACR + BCL, dim=2)
             arcs_r = x + attach[:, f[0], f[1]]
             alpha[A][I][R][:, start_idx: N - k, k] = arcs_r
-            alpha[B][I][R][:, k+start_idx:N, N - k - 1] = arcs_r
-            AIR = alpha[A][I][R][:, start_idx: N - k, 1 : k + 1]
-            BIL = alpha[B][I][L][:, k+start_idx:, N - k - 1 : N - 1]
+            alpha[B][I][R][:, k + start_idx:N, N - k - 1] = arcs_r
+            AIR = alpha[A][I][R][:, start_idx: N - k, 1: k + 1]
+            BIL = alpha[B][I][L][:, k + start_idx:, N - k - 1: N - 1]
             new = semiring_plus(ACL + BIL, dim=2)
             alpha[A][C][L][:, start_idx: N - k, k] = new
-            alpha[B][C][L][:, k+start_idx:N, N - k - 1] = new
+            alpha[B][C][L][:, k + start_idx:N, N - k - 1] = new
             new = semiring_plus(AIR + BCR, dim=2)
-            alpha[A][C][R][:, start_idx:N-k, k] = new
-            alpha[B][C][R][:, start_idx+k:N, N - k - 1] = new
+            alpha[A][C][R][:, start_idx:N - k, k] = new
+            alpha[B][C][R][:, start_idx + k:N, N - k - 1] = new
         # dealing with the root.
-        root_incomplete_span = alpha[A][C][L][:, 1, :N-1] + attach[:, 0, 1:]
-        for k in range(1,N):
+        root_incomplete_span = alpha[A][C][L][:, 1, :N - 1] + attach[:, 0, 1:]
+        for k in range(1, N):
             AIR = root_incomplete_span[:, :k]
-            BCR = alpha[B][C][R][:, k, N-k:]
-            alpha[A][C][R][:, 0, k] = semiring_plus(AIR+BCR, dim=1)
+            BCR = alpha[B][C][R][:, k, N - k:]
+            alpha[A][C][R][:, 0, k] = semiring_plus(AIR + BCR, dim=1)
         logZ = torch.gather(alpha[A][C][R][:, 0, :], -1, lens.unsqueeze(-1))
         arc = torch.autograd.grad(logZ.sum(), attach)[0].nonzero().tolist()
         predicted_arc = [[] for _ in range(logZ.shape[0])]
         for a in arc:
-            predicted_arc[a[0]].append((a[1] - 1, a[2] -1 ))
+            predicted_arc[a[0]].append((a[1] - 1, a[2] - 1))
         return predicted_arc
-

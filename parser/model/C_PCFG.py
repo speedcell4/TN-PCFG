@@ -1,8 +1,11 @@
 import torch
 import torch.nn as nn
+from torch.nn.utils.rnn import pack_padded_sequence
+from torch.nn.utils.rnn import pad_packed_sequence
+
 from parser.modules.res import ResLayer
-from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 from ..pcfgs.pcfg import PCFG
+
 
 class CompoundPCFG(nn.Module):
     def __init__(self, args, dataset):
@@ -47,7 +50,6 @@ class CompoundPCFG(nn.Module):
 
         self._initialize()
 
-
     def _initialize(self):
         for p in self.parameters():
             if p.dim() > 1:
@@ -71,7 +73,7 @@ class CompoundPCFG(nn.Module):
             h = output.max(1)[0]
             out = self.enc_out(h)
             mean = out[:, : self.z_dim]
-            lvar = out[:, self.z_dim :]
+            lvar = out[:, self.z_dim:]
             return mean, lvar
 
         def kl(mean, logvar):
@@ -82,9 +84,8 @@ class CompoundPCFG(nn.Module):
         z = mean
 
         if not evaluating:
-            z = mean.new(b, mean.size(1)).normal_(0,1)
+            z = mean.new(b, mean.size(1)).normal_(0, 1)
             z = (0.5 * lvar).exp() * z + mean
-
 
         def roots():
             root_emb = self.root_emb.expand(b, self.s_dim)
@@ -113,7 +114,6 @@ class CompoundPCFG(nn.Module):
             rule_prob = rule_prob.reshape(b, self.NT, self.NT_T, self.NT_T)
             return rule_prob
 
-
         root, unary, rule = roots(), terms(), rules()
 
         return {'unary': unary,
@@ -123,10 +123,9 @@ class CompoundPCFG(nn.Module):
 
     def loss(self, input):
         rules = self.forward(input)
-        result =  self.pcfg._inside(rules=rules, lens=input['seq_len'])
-        loss =  (-result['partition'] + rules['kl']).mean()
+        result = self.pcfg._inside(rules=rules, lens=input['seq_len'])
+        loss = (-result['partition'] + rules['kl']).mean()
         return loss
-
 
     def evaluate(self, input, decode_type, **kwargs):
         rules = self.forward(input, evaluating=True)
@@ -139,5 +138,3 @@ class CompoundPCFG(nn.Module):
 
         result['partition'] -= rules['kl']
         return result
-
-

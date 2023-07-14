@@ -12,24 +12,23 @@ __all__ = [
 ]
 
 import inspect
+import numpy as np
+import re
+import torch
 import warnings
 from abc import abstractmethod
 from collections import defaultdict
-from typing import Union
 from copy import deepcopy
-import re
+from typing import Union
 
-import numpy as np
-import torch
-
-from .utils import _CheckError
-from .utils import _CheckRes
 from .utils import _build_args
 from .utils import _check_arg_dict_list
+from .utils import _CheckError
+from .utils import _CheckRes
 from .utils import _get_func_signature
+from .utils import ConfusionMatrix
 from .utils import seq_len_to_mask
 from .vocabulary import Vocabulary
-from .utils import ConfusionMatrix
 
 
 class MetricBase(object):
@@ -308,13 +307,14 @@ class ConfusionMatrixMetric(MetricBase):
         }
         
     """
+
     def __init__(self,
                  vocab=None,
                  pred=None,
                  target=None,
                  seq_len=None,
                  print_ratio=False
-                ):
+                 ):
         r"""
         :param vocab: vocab词表类,要求有to_word()方法。
         :param pred: 参数映射表中 `pred` 的映射关系，None表示映射关系为 `pred` -> `pred`
@@ -354,9 +354,10 @@ class ConfusionMatrixMetric(MetricBase):
                 f"got {type(seq_len)}.")
 
         if pred.dim() == target.dim():
-            if torch.numel(pred) !=torch.numel(target):
-                raise RuntimeError(f"In {_get_func_signature(self.evaluate)}, when pred have same dimensions with target, they should have same element numbers. while target have "
-                               f"element numbers:{torch.numel(target)}, pred have element numbers: {torch.numel(pred)}")
+            if torch.numel(pred) != torch.numel(target):
+                raise RuntimeError(
+                    f"In {_get_func_signature(self.evaluate)}, when pred have same dimensions with target, they should have same element numbers. while target have "
+                    f"element numbers:{torch.numel(target)}, pred have element numbers: {torch.numel(pred)}")
 
             pass
         elif pred.dim() == target.dim() + 1:
@@ -375,7 +376,7 @@ class ConfusionMatrixMetric(MetricBase):
                                seq_len.tolist()):
                 l = int(l)
                 self.confusion_matrix.add_pred_target(p[:l], t[:l])
-        elif target.dim() > 1:  #对于没有传入seq_len，但是又是高维的target，按全长输出
+        elif target.dim() > 1:  # 对于没有传入seq_len，但是又是高维的target，按全长输出
             for p, t in zip(pred.tolist(), target.tolist()):
                 self.confusion_matrix.add_pred_target(p, t)
         else:
@@ -392,9 +393,6 @@ class ConfusionMatrixMetric(MetricBase):
         if reset:
             self.confusion_matrix.clear()
         return confusion
-
-
-
 
 
 class AccuracyMetric(MetricBase):
@@ -448,9 +446,10 @@ class AccuracyMetric(MetricBase):
             masks = None
 
         if pred.dim() == target.dim():
-            if torch.numel(pred) !=torch.numel(target):
-                raise RuntimeError(f"In {_get_func_signature(self.evaluate)}, when pred have same dimensions with target, they should have same element numbers. while target have "
-                               f"element numbers:{torch.numel(target)}, pred have element numbers: {torch.numel(pred)}")
+            if torch.numel(pred) != torch.numel(target):
+                raise RuntimeError(
+                    f"In {_get_func_signature(self.evaluate)}, when pred have same dimensions with target, they should have same element numbers. while target have "
+                    f"element numbers:{torch.numel(target)}, pred have element numbers: {torch.numel(pred)}")
 
             pass
         elif pred.dim() == target.dim() + 1:
@@ -482,6 +481,7 @@ class AccuracyMetric(MetricBase):
             self.acc_count = 0
             self.total = 0
         return evaluate_result
+
 
 class ClassifyFPreRecMetric(MetricBase):
     r"""
@@ -522,7 +522,7 @@ class ClassifyFPreRecMetric(MetricBase):
         :param str f_type: `micro` 或 `macro` . `micro` :通过先计算总体的TP，FN和FP的数量，再计算f, precision, recall; `macro` : 分布计算每个类别的f, precision, recall，然后做平均（各类别f的权重相同）
         :param float beta: f_beta分数， :math:`f_{beta} = \frac{(1 + {beta}^{2})*(pre*rec)}{({beta}^{2}*pre + rec)}` . 常用为 `beta=0.5, 1, 2` 若为0.5则精确率的权重高于召回率；若为1，则两者平等；若为2，则召回率权重高于精确率。
         """
-        
+
         if tag_vocab:
             if not isinstance(tag_vocab, Vocabulary):
                 raise TypeError("tag_vocab can only be fastNLP.Vocabulary, not {}.".format(type(tag_vocab)))
@@ -576,9 +576,10 @@ class ClassifyFPreRecMetric(MetricBase):
         masks = masks.eq(1)
 
         if pred.dim() == target.dim():
-            if torch.numel(pred) !=torch.numel(target):
-                raise RuntimeError(f"In {_get_func_signature(self.evaluate)}, when pred have same dimensions with target, they should have same element numbers. while target have "
-                               f"element numbers:{torch.numel(target)}, pred have element numbers: {torch.numel(pred)}")
+            if torch.numel(pred) != torch.numel(target):
+                raise RuntimeError(
+                    f"In {_get_func_signature(self.evaluate)}, when pred have same dimensions with target, they should have same element numbers. while target have "
+                    f"element numbers:{torch.numel(target)}, pred have element numbers: {torch.numel(pred)}")
 
             pass
         elif pred.dim() == target.dim() + 1:
@@ -1115,6 +1116,7 @@ class CMRC2018Metric(MetricBase):
     r"""
     CRMC2018任务的评价metric
     """
+
     def __init__(self, answers=None, raw_chars=None, context_len=None, pred_start=None, pred_end=None):
         super().__init__()
         self._init_param_map(answers=answers, raw_chars=raw_chars, context_len=context_len, pred_start=pred_start,
@@ -1155,12 +1157,13 @@ class CMRC2018Metric(MetricBase):
             self.em += _calc_cmrc2018_em_score(answer, pred_an)
 
     def get_metric(self, reset=True):
-        eval_res = {'f1': round(self.f1 / self.total*100, 2), 'em': round(self.em / self.total*100, 2)}
+        eval_res = {'f1': round(self.f1 / self.total * 100, 2), 'em': round(self.em / self.total * 100, 2)}
         if reset:
             self.em = 0
             self.total = 0
             self.f1 = 0
         return eval_res
+
 
 # split Chinese
 def _cn_segmentation(in_str, rm_punc=False):

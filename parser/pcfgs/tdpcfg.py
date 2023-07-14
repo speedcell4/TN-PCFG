@@ -1,10 +1,13 @@
 import pdb
-from parser.pcfgs.pcfgs import PCFG_base
-from parser.pcfgs.fn import  stripe, diagonal_copy_, checkpoint, diagonal
-from parser.triton.fn import _log_then_diagonal_copy_, _merge
 import torch
 
-
+from parser.pcfgs.fn import checkpoint
+from parser.pcfgs.fn import diagonal
+from parser.pcfgs.fn import diagonal_copy_
+from parser.pcfgs.fn import stripe
+from parser.pcfgs.pcfgs import PCFG_base
+from parser.triton.fn import _log_then_diagonal_copy_
+from parser.triton.fn import _merge
 
 
 class TDPCFG(PCFG_base):
@@ -20,13 +23,10 @@ class TDPCFG(PCFG_base):
         unary = rules['unary']
         root = rules['root']
 
-
-
-
         # 3d binary rule probabilities tensor decomposes to three 2d matrices after CP decomposition.
         H = rules['head']  # (batch, NT, r) r:=rank
         L = rules['left']  # (batch, NT+T, r)
-        R = rules['right'] # (batch, NT+T, r)
+        R = rules['right']  # (batch, NT+T, r)
 
         T = unary.shape[-1]
         S = L.shape[-2]
@@ -71,15 +71,14 @@ class TDPCFG(PCFG_base):
             b_n_x = (b_n_r.unsqueeze(-2) + H.unsqueeze(1)).logsumexp(-1)
             return b_n_x
 
-
         batch, N, *_ = unary.shape
         N += 1
 
         # for estimating marginals.
         span_indicator = unary.new_zeros(batch, N, N).requires_grad_(mbr)
 
-        left_term = transform_left_t(unary,L_term)
-        right_term = transform_right_t(unary,R_term)
+        left_term = transform_left_t(unary, L_term)
+        right_term = transform_right_t(unary, R_term)
 
         s = unary.new_zeros(batch, N, N, NT).fill_(-1e9)
         # for caching V^{T}s_{i,k} and W^{T}s_{k+1,j} as described in paper to decrease complexities.
@@ -98,7 +97,7 @@ class TDPCFG(PCFG_base):
             x = merge(Y.clone(), Z.clone())
             x = x + span_indicator[:, torch.arange(n), w + torch.arange(n)].unsqueeze(-1)
             if w + 1 < N:
-                left_x = transform_left_nt(x,L_nonterm)
+                left_x = transform_left_nt(x, L_nonterm)
                 right_x = transform_right_nt(x, R_nonterm)
                 diagonal_copy_(left_s, left_x, w)
                 diagonal_copy_(right_s, right_x, w)
@@ -113,9 +112,9 @@ class TDPCFG(PCFG_base):
         else:
 
             return {
-                    "prediction" : self._get_prediction(logZ, span_indicator, lens, mbr=True),
-                    "partition" : logZ
-                    }
+                "prediction": self._get_prediction(logZ, span_indicator, lens, mbr=True),
+                "partition": logZ
+            }
 
 
 class Fastest_TDPCFG(PCFG_base):
@@ -236,7 +235,6 @@ class Fastest_TDPCFG(PCFG_base):
             }
 
 
-
 class Triton_TDPCFG(PCFG_base):
     def __init__(self):
         super(Triton_TDPCFG, self).__init__()
@@ -287,33 +285,31 @@ class Triton_TDPCFG(PCFG_base):
         with torch.no_grad():
             unary_max = unary.max(-1)[0]
 
-        unary = (unary - unary_max.unsqueeze(-1)).exp()        
+        unary = (unary - unary_max.unsqueeze(-1)).exp()
 
-        unary = torch.einsum('bnp, bpq -> bnq',  unary , torch.cat([L_term, R_term], dim=-1))
+        unary = torch.einsum('bnp, bpq -> bnq', unary, torch.cat([L_term, R_term], dim=-1))
 
-
-        alpha_c = unary.new_zeros(batch, N, N,  2, L.shape[2])
+        alpha_c = unary.new_zeros(batch, N, N, 2, L.shape[2])
         alpha_c = _log_then_diagonal_copy_(unary, unary_max, alpha_c)
-                
+
         # w: span width
         for w in range(2, N):
-            n = N - w      
+            n = N - w
             normalizer = alpha_c.new_zeros(batch, n)
-        
-            out, normalizer = _merge(normalizer, diagonal(span_indicator, w), alpha_c)
-            if w < N-1:                                                
-                out = torch.einsum('blr, brq -> blq', out, LR)                
-                alpha_c = _log_then_diagonal_copy_(out, normalizer, alpha_c)
-        
-        logZ = (torch.einsum('bnr, br -> b', out, torch.einsum('bm, brm -> br', root, H)) + 1e-9).log() + normalizer.squeeze(1)
 
-    
+            out, normalizer = _merge(normalizer, diagonal(span_indicator, w), alpha_c)
+            if w < N - 1:
+                out = torch.einsum('blr, brq -> blq', out, LR)
+                alpha_c = _log_then_diagonal_copy_(out, normalizer, alpha_c)
+
+        logZ = (torch.einsum('bnr, br -> b', out,
+                             torch.einsum('bm, brm -> br', root, H)) + 1e-9).log() + normalizer.squeeze(1)
 
         if not mbr and not viterbi:
             return {'partition': logZ}
 
         elif marginal:
-            logZ.sum().backward()            
+            logZ.sum().backward()
             return {'marginal': span_indicator.grad}
 
         else:
@@ -321,5 +317,3 @@ class Triton_TDPCFG(PCFG_base):
                 "prediction": self._get_prediction(logZ, span_indicator, lens, mbr=True),
                 "partition": logZ
             }
-    
-

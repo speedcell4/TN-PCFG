@@ -9,7 +9,8 @@ __all__ = [
 
 import os
 from pathlib import Path
-from typing import Union, Dict
+from typing import Dict
+from typing import Union
 
 from ..core import logger
 
@@ -62,7 +63,7 @@ def check_loader_paths(paths: Union[str, Dict[str, str]]) -> Dict[str, str]:
             return files
         else:
             raise FileNotFoundError(f"{paths} is not a valid file path.")
-    
+
     elif isinstance(paths, dict):
         if paths:
             if 'train' not in paths:

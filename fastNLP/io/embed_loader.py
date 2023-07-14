@@ -8,10 +8,9 @@ __all__ = [
 ]
 
 import logging
+import numpy as np
 import os
 import warnings
-
-import numpy as np
 
 from ..core.utils import Option
 from ..core.vocabulary import Vocabulary
@@ -35,7 +34,7 @@ class EmbedLoader:
     r"""
     用于读取预训练的embedding, 读取结果可直接载入为模型参数。
     """
-    
+
     def __init__(self):
         super(EmbedLoader, self).__init__()
 
@@ -108,9 +107,9 @@ class EmbedLoader:
 
             if normalize:
                 matrix /= np.linalg.norm(matrix, axis=1, keepdims=True)
-            
+
             return matrix
-    
+
     @staticmethod
     def load_without_vocab(embed_filepath, dtype=np.float32, padding='<pad>', unknown='<unk>', normalize=True,
                            error='ignore'):
@@ -132,7 +131,7 @@ class EmbedLoader:
         vec_dict = {}
         found_unknown = False
         found_pad = False
-        
+
         with open(embed_filepath, 'r', encoding='utf-8') as f:
             line = f.readline()
             start = 1
@@ -181,8 +180,8 @@ class EmbedLoader:
                     matrix[start_idx - 1] = np.random.randn(1, dim).astype(dtype) * std + mean
                 if (padding is not None) and (not found_pad):
                     matrix[0] = np.random.randn(1, dim).astype(dtype) * std + mean
-            
+
             if normalize:
                 matrix /= np.linalg.norm(matrix, axis=1, keepdims=True)
-            
+
             return matrix, vocab

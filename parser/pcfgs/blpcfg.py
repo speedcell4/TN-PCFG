@@ -1,7 +1,8 @@
 import torch
-from .pcfgs import PCFG_base
-from .fn import  *
+
 from .eisner_satta import EisnerSatta
+from .fn import *
+from .pcfgs import PCFG_base
 
 
 class FastBLPCFG(PCFG_base):
@@ -126,7 +127,8 @@ class Inside(torch.autograd.Function):
             right_normalizer = stripe_with_headword(s_normalizer, n, w - 1, (1, w), 0)
             # (b, n, H, A)
             headed_normalizer, headed = merge(
-                (stripe_with_headword(s_inherent, n, w - 1, (0, 1)).clamp(min=1e-9)).log_().add_(left_normalizer.unsqueeze(-1)),
+                (stripe_with_headword(s_inherent, n, w - 1, (0, 1)).clamp(min=1e-9)).log_().add_(
+                    left_normalizer.unsqueeze(-1)),
                 (stripe_with_headword(s_inherent, n, w - 1, (1, w), 0).clamp(min=1e-9)).log_().add_(
                     right_normalizer.unsqueeze(-1)),
                 closed_left,
@@ -146,7 +148,8 @@ class Inside(torch.autograd.Function):
                 diagonal_copy_(s_noninherent, headed_closed, w)
                 diagonal_copy_with_headword(s_inherent, headed, w)
 
-        tmp = (s[torch.arange(B), 0, lens].clamp(min=1e-9)).log_().add_(headed_normalizer.squeeze(1).unsqueeze(-1)).add_(root)
+        tmp = (s[torch.arange(B), 0, lens].clamp(min=1e-9)).log_().add_(
+            headed_normalizer.squeeze(1).unsqueeze(-1)).add_(root)
         logZ = (tmp).logsumexp([-1, -2])
 
         grad_noninherent_word = logZ.new_zeros(*noninherent_word.shape)
@@ -169,7 +172,6 @@ class Inside(torch.autograd.Function):
         grad_root = (tmp - logZ[..., None, None]).exp_()
         grad_s[torch.arange(B), 0, lens] = (1 / (s[torch.arange(B), 0, lens].clamp(min=1e-9))) * grad_root
 
-
         # aaa = ((1 / (headed + 1e-9)) * grad_root).sum(1)
 
         for w in range(N - 1, 1, -1):
@@ -178,7 +180,8 @@ class Inside(torch.autograd.Function):
                 # parent gradient..
                 tmp_grd_s_inherent = diagonal_with_headword(grad_s_inherent, w)
                 tmp_grd_s_noninherent = torch.cat(
-                    [diagonal(grad_s_noninherent_l, w).unsqueeze(-1), diagonal(grad_s_noninherent_r, w).unsqueeze(-1)], dim=-1)
+                    [diagonal(grad_s_noninherent_l, w).unsqueeze(-1), diagonal(grad_s_noninherent_r, w).unsqueeze(-1)],
+                    dim=-1)
 
                 # Backward Contract_B
                 headed = diagonal_with_headword(s, w)
@@ -199,7 +202,7 @@ class Inside(torch.autograd.Function):
                 grd_tmp = percent * tmp_grd_s_noninherent[:, :, None, ...]
                 grd_rule_word = grd_tmp.sum(-1)
                 for i in range(n):
-                    grad_noninherent_word[:, i:i+w] += grd_rule_word[:, i]
+                    grad_noninherent_word[:, i:i + w] += grd_rule_word[:, i]
 
                 tmptmp = (1 / tmp_bnhrd_1.clamp(min=1e-9)) * grd_tmp
                 grad_noninherent_symbol[:, nt_slice] += torch.einsum('bnhrd, bnhm -> bmrd', tmptmp, headed)
@@ -208,10 +211,10 @@ class Inside(torch.autograd.Function):
 
                 tmp_grd = torch.cat([diagonal(grad_span_headword_left, w).unsqueeze(-1),
                                      diagonal(grad_span_headword_right, w).unsqueeze(-1)]
-                                    ,dim=-1)
+                                    , dim=-1)
                 arc_grd = torch.einsum('bnhrd, bncrd -> bnch', tmp_grd, percent)
                 for i in range(n):
-                    grad_arc[:, i:i+w] += arc_grd[:, i]
+                    grad_arc[:, i:i + w] += arc_grd[:, i]
 
                 # span_grd = arc_grd.sum([-1, -2])
                 # diagonal_copy_(grad_span, span_grd, w)
@@ -229,9 +232,9 @@ class Inside(torch.autograd.Function):
 
             # merge
             # forward pass. Prepare for all necessary quantities that are needed in the backward pass.
-            headed = left.new_zeros(B, n, w-1, w, r).fill_(-1e9)
+            headed = left.new_zeros(B, n, w - 1, w, r).fill_(-1e9)
 
-            for i in range(w-1):
+            for i in range(w - 1):
                 headed[:, :, i, :i + 1] = (left[:, :, i, :i + 1] + closed_right[:, :, i, None, :])
                 headed[:, :, i, i + 1:] = (right[:, :, i, i + 1:] + closed_left[:, :, i, None, :])
 
@@ -252,7 +255,7 @@ class Inside(torch.autograd.Function):
             # Backward head.
             tmp = torch.einsum('bnhm, bnhr -> bnhmr', parent_grad_s, headed)
             for i in range(n):
-                grad_head[:, i:i+w, ...] += tmp[:, i]
+                grad_head[:, i:i + w, ...] += tmp[:, i]
 
             # Backward headed.
             rule = stripe_grammar_rules(head, n, w)
@@ -266,7 +269,7 @@ class Inside(torch.autograd.Function):
             # tmp = tmp[:, :, None, :] * percent
             # compute span marginal
 
-            tmp_span_grd = tmp.sum([-1,-2])
+            tmp_span_grd = tmp.sum([-1, -2])
             stripe_add_(grad_span, tmp_span_grd, n, w - 1, (0, 1))
             stripe_add_(grad_span, tmp_span_grd, n, w - 1, (1, w), 0)
             del tmp_span_grd
@@ -276,49 +279,53 @@ class Inside(torch.autograd.Function):
             grad_closed_left = s.new_zeros(*closed_left_shape)
             grad_closed_right = s.new_zeros(*closed_left_shape)
 
-            for i in range(w-1):
+            for i in range(w - 1):
                 grad_left[:, :, i, :i + 1] = tmp[:, :, i, :i + 1]
                 grad_closed_right[:, :, i, ] = (tmp[:, :, i, :i + 1]).sum(2)
                 grad_right[:, :, i, i + 1:] = tmp[:, :, i, i + 1:]
                 grad_closed_left[:, :, i, ] = tmp[:, :, i, i + 1:].sum(2)
                 # grad_span_headword[:, :, i, :i + 1, :] = tmp[:, :, i, :i + 1]
-                stripe_need_dad_add_(grad_span_headword_left, tmp[:, :, i, i+1:], n, w-(i + 1), start = 0, end=i + 1,
+                stripe_need_dad_add_(grad_span_headword_left, tmp[:, :, i, i + 1:], n, w - (i + 1), start=0, end=i + 1,
                                      headstart=i + 1)
-                stripe_need_dad_add_(grad_span_headword_right, tmp[:, :, i, :i + 1], n, i + 1, start = i + 1, end = w,
-                                     headstart = 0)
+                stripe_need_dad_add_(grad_span_headword_right, tmp[:, :, i, :i + 1], n, i + 1, start=i + 1, end=w,
+                                     headstart=0)
 
             stripe_add_(grad_s_noninherent_l, grad_closed_left, n, w - 1, (0, 1))
             stripe_add_(grad_s_noninherent_r, grad_closed_right, n, w - 1, (1, w), 0)
 
             stripe_with_headword_add_(grad_s_inherent,
-                                      (1 / (stripe_with_headword(s_inherent, n, w - 1, (0, 1)).clamp(min=1e-9))).mul_(grad_left),
+                                      (1 / (stripe_with_headword(s_inherent, n, w - 1, (0, 1)).clamp(min=1e-9))).mul_(
+                                          grad_left),
                                       n, w - 1, (0, 1)
                                       )
 
             stripe_with_headword_add_(grad_s_inherent,
-                                      (1/(stripe_with_headword(s_inherent, n, w - 1, (1, w), 0).clamp(min=1e-9))).mul_(grad_right),
+                                      (1 / (
+                                          stripe_with_headword(s_inherent, n, w - 1, (1, w), 0).clamp(min=1e-9))).mul_(
+                                          grad_right),
                                       n, w - 1, (1, w), 0
                                       )
 
             del grad_left, grad_right, tmp, grad_closed_left, grad_closed_right
 
-        parent_grd = grad_s_inherent[:, torch.arange(H), torch.arange(H)+1, torch.arange(H)]
+        parent_grd = grad_s_inherent[:, torch.arange(H), torch.arange(H) + 1, torch.arange(H)]
 
-        grad_inherent[:, t_slice] = parent_grd.sum(1).unsqueeze(1).expand(* grad_inherent[:, t_slice].shape)
+        grad_inherent[:, t_slice] = parent_grd.sum(1).unsqueeze(1).expand(*grad_inherent[:, t_slice].shape)
 
         parent_grd = \
-                       torch.cat([grad_s_noninherent_l[:, torch.arange(H), torch.arange(H)+1].unsqueeze(-1),
-                       grad_s_noninherent_r[:, torch.arange(H), torch.arange(H)+1].unsqueeze(-1)
+            torch.cat([grad_s_noninherent_l[:, torch.arange(H), torch.arange(H) + 1].unsqueeze(-1),
+                       grad_s_noninherent_r[:, torch.arange(H), torch.arange(H) + 1].unsqueeze(-1)
                        ], dim=-1)
 
         grad_noninherent_word += parent_grd.sum(-1)
 
-        grad_noninherent_symbol[:, t_slice] =  ((1/(noninherent_symbol[:, t_slice, :, :].sum(
-            1)).clamp(min=1e-9))[:, None, ...] * parent_grd).sum(1).unsqueeze(1).expand(*grad_noninherent_symbol[:, t_slice].shape)
+        grad_noninherent_symbol[:, t_slice] = ((1 / (noninherent_symbol[:, t_slice, :, :].sum(
+            1)).clamp(min=1e-9))[:, None, ...] * parent_grd).sum(1).unsqueeze(1).expand(
+            *grad_noninherent_symbol[:, t_slice].shape)
 
         tmp_grd = torch.cat([diagonal(grad_span_headword_left, 1).unsqueeze(-1),
                              diagonal(grad_span_headword_right, 1).unsqueeze(-1)]
-                            ,dim=-1)
+                            , dim=-1)
 
         grad_arc += tmp_grd.sum([-1, -2])
 
@@ -339,15 +346,14 @@ class Inside(torch.autograd.Function):
         # unary, rule, root
         # noninherent_word, noninherent_symbol, inherent, root, head, span_indicator, arc_indicator
         # print(ctx.span_marginal)
-        return ctx.grad_noninherent_word * multiplier,\
-               ctx.grad_noninherent_symbol * multiplier,\
+        return ctx.grad_noninherent_word * multiplier, \
+               ctx.grad_noninherent_symbol * multiplier, \
                ctx.grad_inherent * multiplier, \
                ctx.grad_root * multiplier, \
-               ctx.grad_head * multiplier,\
-               ctx.span_marginal, \
-               ctx.arc_marginal, \
-               None
-
+               ctx.grad_head * multiplier, \
+            ctx.span_marginal, \
+            ctx.arc_marginal, \
+            None
 
 
 class Operation1(torch.autograd.Function):
@@ -388,14 +394,10 @@ class Operation1(torch.autograd.Function):
         return grad_left, grad_right, grad_closed_left, grad_closed_right
 
 
-
-
-
 class BLPCFG(PCFG_base):
 
     @torch.enable_grad()
     def _inside(self, rules, lens, decoding=False):
-
 
         noninherent = rules['noninherent']
         inherent = rules['inherent']
@@ -415,7 +417,6 @@ class BLPCFG(PCFG_base):
 
         s = head.new_zeros(B, N, N, H, NT).fill_(-1e9)
 
-
         s_noninherent = head.new_zeros(B, N, N, r, 2).fill_(-1e9)
         s_inherent = head.new_zeros(B, N, N, H, r).fill_(-1e9)
 
@@ -427,7 +428,8 @@ class BLPCFG(PCFG_base):
 
         s_noninherent[:, torch.arange(H), torch.arange(H) + 1, :] = noninherent[:, :, t_slice, :, :].logsumexp(-3)
 
-        s_inherent[:, torch.arange(H), torch.arange(H) + 1, torch.arange(H)] = inherent[:, t_slice, :].logsumexp(-2).unsqueeze(1).expand(-1, H, -1)
+        s_inherent[:, torch.arange(H), torch.arange(H) + 1, torch.arange(H)] = inherent[:, t_slice, :].logsumexp(
+            -2).unsqueeze(1).expand(-1, H, -1)
 
         span_indicator = head.new_zeros(B, N, N).requires_grad_(decoding)
 
@@ -444,12 +446,12 @@ class BLPCFG(PCFG_base):
             '''
             # contract w firstly
             # 0=left, 1=right
-            left = ((left + closed_right[..., None, :]).logsumexp(-3)[..., None, :] )
-            right = ((right + closed_left[..., None, :]).logsumexp(-3)[..., None, :] )
+            left = ((left + closed_right[..., None, :]).logsumexp(-3)[..., None, :])
+            right = ((right + closed_left[..., None, :]).logsumexp(-3)[..., None, :])
             # combine left and right case.
-            headed =  torch.stack([left, right]).logsumexp([0])
+            headed = torch.stack([left, right]).logsumexp([0])
             # contract tensor-rank r.
-            return  (headed + head_rule).logsumexp(-1)
+            return (headed + head_rule).logsumexp(-1)
 
         # Term D1-2 in the paper.
         def contract_qC(s, rule):
@@ -470,7 +472,6 @@ class BLPCFG(PCFG_base):
             '''
             return (s[..., None] + rule[:, None, None, ...]).logsumexp(-2)
 
-
         for w in range(2, N):
             n = N - w
 
@@ -482,7 +483,8 @@ class BLPCFG(PCFG_base):
             closed_left = stripe(s_noninherent[..., LEFT], n, w - 1, (0, 1))
             closed_right = stripe(s_noninherent[..., RIGHT], n, w - 1, (1, w), 0)
             # (b, n, H, A)
-            headed = merge(left.clone(),  right.clone(),closed_left.clone(), closed_right.clone(), stripe_grammar_rules(head, n, w))
+            headed = merge(left.clone(), right.clone(), closed_left.clone(), closed_right.clone(),
+                           stripe_grammar_rules(head, n, w))
             headed = headed + span_indicator[:, torch.arange(n), torch.arange(n) + w, None, None]
             diagonal_copy_with_headword(s, headed, w)
 
@@ -496,7 +498,6 @@ class BLPCFG(PCFG_base):
                 diagonal_copy_with_headword(s_inherent, headed, w)
 
         logZ = (s[torch.arange(B), 0, lens] + root).logsumexp([-1, -2])
-
 
         if not decoding:
             if lens.max() > 1:
@@ -520,7 +521,6 @@ class BLPCFG(PCFG_base):
             prediction = self._inside(rules, lens, decoding=True)
             prediction['prediction_arc'] = self._mbr_arc(rules, lens)
             return prediction
-
 
     # I did not find an elegant way to estimate the marginals of arcs as that of spans. sorry for the messy code below.
     # Basically, codes below did not fully make use of the ```fold-unfold`` technique in order to make a `direct` connection between head word and child word to
@@ -558,17 +558,19 @@ class BLPCFG(PCFG_base):
             LEFT = 0
 
             RIGHT = 1
-            s_noninherent_left[:, torch.arange(H), torch.arange(H) + 1, :, :] = noninherent[:, :, t_slice, :, LEFT].logsumexp(
-                -2).unsqueeze(-2) + arc_indicator[:,  torch.arange(H), :].unsqueeze(-1)
-            s_noninherent_right[:, torch.arange(H), torch.arange(H) + 1, :,  :] = noninherent[:, :, t_slice, :,
-                                                                              RIGHT].logsumexp(-2).unsqueeze(-2) + arc_indicator[:, torch.arange(H), :].unsqueeze(-1)
+            s_noninherent_left[:, torch.arange(H), torch.arange(H) + 1, :, :] = noninherent[:, :, t_slice, :,
+                                                                                LEFT].logsumexp(
+                -2).unsqueeze(-2) + arc_indicator[:, torch.arange(H), :].unsqueeze(-1)
+            s_noninherent_right[:, torch.arange(H), torch.arange(H) + 1, :, :] = noninherent[:, :, t_slice, :,
+                                                                                 RIGHT].logsumexp(-2).unsqueeze(
+                -2) + arc_indicator[:, torch.arange(H), :].unsqueeze(-1)
             s_inherent[:, torch.arange(H), torch.arange(H) + 1, torch.arange(H)] = inherent[:, t_slice, :].logsumexp(
                 -2).unsqueeze(1).expand(-1, H, -1)
 
             @checkpoint
             def reduce_1(left, closed_left, right, closed_right):
                 left = (left[:, :, :, :] + closed_right[:, :, :, :, :]).logsumexp([2])
-                right = (right[:, :, :,  :] + closed_left[:, :, :, :, :]).logsumexp([2])
+                right = (right[:, :, :, :] + closed_left[:, :, :, :, :]).logsumexp([2])
                 return torch.stack([left, right]).logsumexp([0])
 
             @checkpoint
@@ -579,7 +581,6 @@ class BLPCFG(PCFG_base):
             def reduce_3(a, b):
                 return (a + b).logsumexp(-2)
 
-
             for w in range(2, N):
                 n = N - w
 
@@ -587,16 +588,16 @@ class BLPCFG(PCFG_base):
                     headed = torch.zeros(B, n, w, NT, device=torch.device("cuda")).fill_(-1e9)
 
                     headed[:, :, LEFT, ...] = (
-                            s_noninherent_right[:, torch.arange(n) + 1, torch.arange(n) + 2, torch.arange(n),  None, :] +\
-                            s_inherent[:, torch.arange(n), torch.arange(n) + 1, torch.arange(n),  None, :] +\
+                            s_noninherent_right[:, torch.arange(n) + 1, torch.arange(n) + 2, torch.arange(n), None, :] + \
+                            s_inherent[:, torch.arange(n), torch.arange(n) + 1, torch.arange(n), None, :] + \
                             head[:, torch.arange(n), :, :]
                     ).logsumexp(-1)
 
                     headed[:, :, RIGHT, ...] = (
-                            s_noninherent_left[:, torch.arange(n), torch.arange(n) + 1, torch.arange(n) + 1, None, :] +\
-                            s_inherent[:, torch.arange(n) + 1, torch.arange(n) + 2, torch.arange( n) + 1, None, :] +\
-                            head[:,  torch.arange(n) + 1,  :,  :]
-                        ).logsumexp(-1)
+                            s_noninherent_left[:, torch.arange(n), torch.arange(n) + 1, torch.arange(n) + 1, None, :] + \
+                            s_inherent[:, torch.arange(n) + 1, torch.arange(n) + 2, torch.arange(n) + 1, None, :] + \
+                            head[:, torch.arange(n) + 1, :, :]
+                    ).logsumexp(-1)
 
                 else:
                     left = stripe_with_headword(s_inherent, n, w - 1, (0, 1))
@@ -605,14 +606,13 @@ class BLPCFG(PCFG_base):
                     closed_right = stripe_with_headword(s_noninherent_right, n, w - 1, (1, w), 0)
                     # b, n, w, w+1,
                     headed_tmp = reduce_1(left.clone(), closed_left.clone(), right.clone(),
-                                            closed_right.clone())
+                                          closed_right.clone())
                     headed = reduce_2(headed_tmp[..., None, :], stripe_grammar_rules(head, n, w))
 
                 # headed = headed + span_indicator[:, torch.arange(n), torch.arange(n) + w, None, None]
                 diagonal_copy_with_headword(s, headed, w)
 
                 if w < N - 1:
-
                     # headed: (batch, n, child, nt)
                     # noninherent; (batch, child, nt, r, direction),  after stripe->  (batch, n, child, nt, r, direction)
                     # arcindicator: (batch, n, child, HEAD)
@@ -622,13 +622,13 @@ class BLPCFG(PCFG_base):
                     @checkpoint
                     def reduce22(a, b, c):
                         # marginalize nt first
-                        tmp = (a[:, :, :, None, :, None, None ] + b[:, :, :, None, :, :, :]).logsumexp(-3)
+                        tmp = (a[:, :, :, None, :, None, None] + b[:, :, :, None, :, :, :]).logsumexp(-3)
                         return (tmp + c[..., None, None]).logsumexp(2)
 
                     headed_closed = reduce22(headed,
-                                               stripe_grammar_rules(noninherent[:, :, nt_slice, :, ], n, w),
-                                               stripe_grammar_rules(arc_indicator, n, w)
-                                               )
+                                             stripe_grammar_rules(noninherent[:, :, nt_slice, :, ], n, w),
+                                             stripe_grammar_rules(arc_indicator, n, w)
+                                             )
                     headed = reduce_3(headed[..., None], inherent[:, None, None, nt_slice])
                     diagonal_copy_(s_noninherent_left, headed_closed[..., 0], w)
                     diagonal_copy_(s_noninherent_right, headed_closed[..., 1], w)
@@ -645,7 +645,4 @@ class BLPCFG(PCFG_base):
             attach[:, 1:, 1:] = arc_marginals.transpose(-1, -2)
             del s, s_noninherent_left, s_inherent, s_noninherent_right
             arc_prediction = self._eisner(attach, lens)
-            return  arc_prediction
-
-
-
+            return arc_prediction

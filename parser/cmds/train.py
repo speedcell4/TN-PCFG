@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from datetime import datetime, timedelta
-from parser.cmds.cmd import CMD
-from parser.helper.metric import Metric
-from parser.helper.loader_wrapper import DataPrefetcher
-import torch
 import numpy as np
-from parser.helper.util import *
-from parser.helper.data_module import DataModule
+import torch
+from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
+
+from parser.cmds.cmd import CMD
+from parser.helper.data_module import DataModule
+from parser.helper.loader_wrapper import DataPrefetcher
+from parser.helper.metric import Metric
+from parser.helper.util import *
+
 
 class Train(CMD):
 
@@ -53,7 +56,6 @@ class Train(CMD):
             self.train(train_loader_autodevice)
             log.info(f"Epoch {epoch} / {train_arg.max_epoch}:")
 
-
             dev_f1_metric, dev_ll = self.evaluate(eval_loader_autodevice)
             log.info(f"{'dev f1:':6}   {dev_f1_metric}")
             log.info(f"{'dev ll:':6}   {dev_ll}")
@@ -62,11 +64,11 @@ class Train(CMD):
 
             # save the model if it is the best so far
             if dev_ll > best_metric:
-                best_metric = dev_ll 
+                best_metric = dev_ll
                 best_e = epoch
                 torch.save(
-                   obj=self.model.state_dict(),
-                   f = args.save_dir + "/best.pt"
+                    obj=self.model.state_dict(),
+                    f=args.save_dir + "/best.pt"
                 )
                 log.info(f"{t}s elapsed (saved)\n")
             else:

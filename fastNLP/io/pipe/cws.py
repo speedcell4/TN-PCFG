@@ -156,7 +156,7 @@ class CWSPipe(Pipe):
         +-------------+-----------+-------+--------+---------+
 
     """
-    
+
     def __init__(self, dataset_name=None, encoding_type='bmes', replace_num_alpha=True, bigrams=False, trigrams=False):
         r"""
         
@@ -171,12 +171,12 @@ class CWSPipe(Pipe):
             self.word_lens_to_tags = _word_lens_to_bmes
         else:
             self.word_lens_to_tags = _word_lens_to_segapp
-        
+
         self.dataset_name = dataset_name
         self.bigrams = bigrams
         self.trigrams = trigrams
         self.replace_num_alpha = replace_num_alpha
-    
+
     def _tokenize(self, data_bundle):
         r"""
         将data_bundle中的'chars'列切分成一个一个的word.
@@ -185,6 +185,7 @@ class CWSPipe(Pipe):
         :param data_bundle:
         :return:
         """
+
         def split_word_into_chars(raw_chars):
             words = raw_chars.split()
             chars = []
@@ -198,7 +199,7 @@ class CWSPipe(Pipe):
                             subchar = []
                         subchar.append(c)
                         continue
-                    if c == '>' and len(subchar)>0 and subchar[0] == '<':
+                    if c == '>' and len(subchar) > 0 and subchar[0] == '<':
                         subchar.append(c)
                         char.append(''.join(subchar))
                         subchar = []
@@ -210,12 +211,12 @@ class CWSPipe(Pipe):
                 char.extend(subchar)
                 chars.append(char)
             return chars
-        
+
         for name, dataset in data_bundle.datasets.items():
             dataset.apply_field(split_word_into_chars, field_name=Const.CHAR_INPUT,
                                 new_field_name=Const.CHAR_INPUT)
         return data_bundle
-    
+
     def process(self, data_bundle: DataBundle) -> DataBundle:
         r"""
         可以处理的DataSet需要包含raw_words列
@@ -231,13 +232,13 @@ class CWSPipe(Pipe):
         :return:
         """
         data_bundle.copy_field(Const.RAW_WORD, Const.CHAR_INPUT)
-        
+
         if self.replace_num_alpha:
             data_bundle.apply_field(_find_and_replace_alpha_spans, Const.CHAR_INPUT, Const.CHAR_INPUT)
             data_bundle.apply_field(_find_and_replace_digit_spans, Const.CHAR_INPUT, Const.CHAR_INPUT)
-        
+
         self._tokenize(data_bundle)
-        
+
         for name, dataset in data_bundle.datasets.items():
             dataset.apply_field(lambda chars: self.word_lens_to_tags(map(len, chars)), field_name=Const.CHAR_INPUT,
                                 new_field_name=Const.TARGET)
@@ -255,19 +256,19 @@ class CWSPipe(Pipe):
                                                    zip(chars, chars[1:] + ['<eos>'], chars[2:] + ['<eos>'] * 2)],
                                     field_name=Const.CHAR_INPUT, new_field_name='trigrams')
             input_field_names.append('trigrams')
-        
+
         _indexize(data_bundle, input_field_names, Const.TARGET)
-        
+
         input_fields = [Const.TARGET, Const.INPUT_LEN] + input_field_names
         target_fields = [Const.TARGET, Const.INPUT_LEN]
         for name, dataset in data_bundle.datasets.items():
             dataset.add_seq_len(Const.CHAR_INPUT)
-        
+
         data_bundle.set_input(*input_fields)
         data_bundle.set_target(*target_fields)
-        
+
         return data_bundle
-    
+
     def process_from_file(self, paths=None) -> DataBundle:
         r"""
         

@@ -1,15 +1,17 @@
 r"""undocumented"""
-import torch.nn as nn
-import torch
-from torch.nn import LayerNorm
-import torch.nn.functional as F
-from typing import Union, Tuple
-from ...core.utils import seq_len_to_mask
 import math
-from ...modules.encoder.lstm import LSTM
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.nn import LayerNorm
+from typing import Tuple
+from typing import Union
+
 from fastNLP.modules.attention import MultiHeadAttention
+from ...core.utils import seq_len_to_mask
 from ...embeddings import StaticEmbedding
 from ...embeddings.utils import get_embeddings
+from ...modules.encoder.lstm import LSTM
 
 
 class Seq2SeqEncoder(nn.Module):
@@ -17,6 +19,7 @@ class Seq2SeqEncoder(nn.Module):
     所有Sequence2Sequence Encoder的基类。需要实现forward函数
 
     """
+
     def __init__(self):
         super().__init__()
 
@@ -84,8 +87,8 @@ class TransformerSeq2SeqEncoderLayer(nn.Module):
 
 
 class TransformerSeq2SeqEncoder(Seq2SeqEncoder):
-    def __init__(self, embed: Union[nn.Module, StaticEmbedding, Tuple[int, int]], pos_embed = None,
-                 num_layers = 6, d_model = 512, n_head = 8, dim_ff = 2048, dropout = 0.1):
+    def __init__(self, embed: Union[nn.Module, StaticEmbedding, Tuple[int, int]], pos_embed=None,
+                 num_layers=6, d_model=512, n_head=8, dim_ff=2048, dropout=0.1):
         """
         基于Transformer的Encoder
 
@@ -141,8 +144,8 @@ class TransformerSeq2SeqEncoder(Seq2SeqEncoder):
 
 
 class LSTMSeq2SeqEncoder(Seq2SeqEncoder):
-    def __init__(self, embed: Union[nn.Module, StaticEmbedding, Tuple[int, int]], num_layers = 3,
-                 hidden_size = 400, dropout = 0.3, bidirectional=True):
+    def __init__(self, embed: Union[nn.Module, StaticEmbedding, Tuple[int, int]], num_layers=3,
+                 hidden_size=400, dropout=0.3, bidirectional=True):
         """
         LSTM的Encoder
 
@@ -158,9 +161,9 @@ class LSTMSeq2SeqEncoder(Seq2SeqEncoder):
         self.dropout = dropout
         self.hidden_size = hidden_size
         self.bidirectional = bidirectional
-        hidden_size = hidden_size//2 if bidirectional else hidden_size
+        hidden_size = hidden_size // 2 if bidirectional else hidden_size
         self.lstm = LSTM(input_size=embed.embedding_dim, hidden_size=hidden_size, bidirectional=bidirectional,
-                         batch_first=True, dropout=dropout if num_layers>1 else 0, num_layers=num_layers)
+                         batch_first=True, dropout=dropout if num_layers > 1 else 0, num_layers=num_layers)
 
     def forward(self, tokens, seq_len):
         """

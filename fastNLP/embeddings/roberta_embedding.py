@@ -8,21 +8,19 @@ __all__ = [
     "RobertaWordPieceEncoder"
 ]
 
-
-from functools import partial
-import os
 import json
-from itertools import chain
-
 import numpy as np
+import os
 import torch
 import torch.nn as nn
+from functools import partial
+from itertools import chain
 
 from .contextual_embedding import ContextualEmbedding
-from ..core import logger, Vocabulary
+from ..core import logger
+from ..core import Vocabulary
 from ..modules.encoder.roberta import RobertaModel
 from ..modules.tokenizer import RobertaTokenizer
-
 
 VOCAB_NAME = 'vocab.txt'
 ROBERTA_EMBED_HYPER = 'roberta_hyper.json'
@@ -135,10 +133,10 @@ class RobertaEmbedding(ContextualEmbedding):
                 mask = torch.bernoulli(mask).eq(1)  # dropout_word越大，越多位置为1
                 pad_mask = words.ne(self._word_pad_index)
                 mask = pad_mask.__and__(mask)  # pad的位置不为unk
-                if self._word_sep_index!=-100:
+                if self._word_sep_index != -100:
                     not_sep_mask = words.ne(self._word_sep_index)
                     mask = mask.__and__(not_sep_mask)
-                if self._word_cls_index!=-100:
+                if self._word_cls_index != -100:
                     not_cls_mask = words.ne(self._word_cls_index)
                     mask = mask.__and__(not_cls_mask)
                 words = words.masked_fill(mask, self._word_unk_index)
@@ -216,7 +214,7 @@ class _RobertaWordModel(nn.Module):
                                                        f"a roberta model with {encoder_layer_number} layers."
             else:
                 assert layer <= encoder_layer_number, f"The layer index:{layer} is out of scope for " \
-                                                     f"a roberta model with {encoder_layer_number} layers."
+                                                      f"a roberta model with {encoder_layer_number} layers."
 
         assert pool_method in ('avg', 'max', 'first', 'last')
         self.pool_method = pool_method
@@ -231,7 +229,7 @@ class _RobertaWordModel(nn.Module):
                 word = '<pad>'
             elif index == vocab.unknown_idx:
                 word = '<unk>'
-            elif vocab.word_count[word]<min_freq:
+            elif vocab.word_count[word] < min_freq:
                 word = '<unk>'
             word_pieces = self.tokenzier.tokenize(word)
             word_pieces = self.tokenzier.convert_tokens_to_ids(word_pieces)
@@ -255,7 +253,8 @@ class _RobertaWordModel(nn.Module):
             batch_size, max_word_len = words.size()
             word_mask = words.ne(self._word_pad_index)  # 为1的地方有word
             seq_len = word_mask.sum(dim=-1)
-            batch_word_pieces_length = self.word_pieces_lengths[words].masked_fill(word_mask.eq(False), 0)  # batch_size x max_len
+            batch_word_pieces_length = self.word_pieces_lengths[words].masked_fill(word_mask.eq(False),
+                                                                                   0)  # batch_size x max_len
             word_pieces_lengths = batch_word_pieces_length.sum(dim=-1)  # batch_size
             max_word_piece_length = batch_word_pieces_length.sum(dim=-1).max().item()  # 表示word piece的长度(包括padding)
             if max_word_piece_length + 2 > self._max_position_embeddings:
@@ -346,7 +345,8 @@ class _RobertaWordModel(nn.Module):
                     outputs[l_index, :, 0] = pooled_cls
                 else:
                     outputs[l_index, :, 0] = output_layer[:, 0]
-                outputs[l_index, batch_indexes, seq_len + s_shift] = output_layer[batch_indexes, word_pieces_lengths + s_shift]
+                outputs[l_index, batch_indexes, seq_len + s_shift] = output_layer[
+                    batch_indexes, word_pieces_lengths + s_shift]
 
         # 3. 最终的embedding结果
         return outputs
@@ -413,7 +413,8 @@ class RobertaWordPieceEncoder(nn.Module):
         :param bool add_prefix_spance: 是否在句首添加额外的空格，RoBERTa预训练时该值为True
         :return:
         """
-        self.model.index_datasets(*datasets, field_name=field_name, add_cls_sep=add_cls_sep, add_prefix_space=add_prefix_space)
+        self.model.index_datasets(*datasets, field_name=field_name, add_cls_sep=add_cls_sep,
+                                  add_prefix_space=add_prefix_space)
 
     def forward(self, word_pieces, token_type_ids=None):
         r"""
@@ -481,7 +482,7 @@ class RobertaWordPieceEncoder(nn.Module):
 
 
 class _WordPieceRobertaModel(nn.Module):
-    def __init__(self, model_dir_or_name: str, layers: str = '-1', pooled_cls: bool=False):
+    def __init__(self, model_dir_or_name: str, layers: str = '-1', pooled_cls: bool = False):
         super().__init__()
 
         self.tokenzier = RobertaTokenizer.from_pretrained(model_dir_or_name)
@@ -499,10 +500,10 @@ class _WordPieceRobertaModel(nn.Module):
         for layer in self.layers:
             if layer < 0:
                 assert -layer <= encoder_layer_number, f"The layer index:{layer} is out of scope for " \
-                    f"a RoBERTa model with {encoder_layer_number} layers."
+                                                       f"a RoBERTa model with {encoder_layer_number} layers."
             else:
                 assert layer <= encoder_layer_number, f"The layer index:{layer} is out of scope for " \
-                    f"a RoBERTa model with {encoder_layer_number} layers."
+                                                      f"a RoBERTa model with {encoder_layer_number} layers."
 
         self._cls_index = self.tokenzier.encoder['<s>']
         self._sep_index = self.tokenzier.encoder['</s>']
@@ -543,13 +544,13 @@ class _WordPieceRobertaModel(nn.Module):
 
         attn_masks = word_pieces.ne(self._wordpiece_pad_index)
         roberta_outputs, pooled_cls = self.encoder(word_pieces, token_type_ids=torch.zeros_like(word_pieces),
-                                                attention_mask=attn_masks,
-                                                output_all_encoded_layers=True)
+                                                   attention_mask=attn_masks,
+                                                   output_all_encoded_layers=True)
         # output_layers = [self.layers]  # len(self.layers) x batch_size x max_word_piece_length x hidden_size
         outputs = roberta_outputs[0].new_zeros((len(self.layers), batch_size, max_len, roberta_outputs[0].size(-1)))
         for l_index, l in enumerate(self.layers):
             roberta_output = roberta_outputs[l]
-            if l in (len(roberta_output)-1, -1) and self.pooled_cls:
+            if l in (len(roberta_output) - 1, -1) and self.pooled_cls:
                 roberta_output[:, 0] = pooled_cls
             outputs[l_index] = roberta_output
         return outputs

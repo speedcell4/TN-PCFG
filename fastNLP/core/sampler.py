@@ -10,9 +10,8 @@ __all__ = [
     "ConstantTokenNumSampler"
 ]
 
-from itertools import chain
-
 import numpy as np
+from itertools import chain
 
 
 class Sampler(object):
@@ -21,7 +20,7 @@ class Sampler(object):
 
     子类必须实现 ``__call__`` 方法. 输入 `DataSet` 对象, 返回其中元素的下标序列
     """
-    
+
     def __call__(self, data_set):
         r"""
         :param DataSet data_set: `DataSet` 对象, 需要Sample的数据
@@ -35,7 +34,7 @@ class SequentialSampler(Sampler):
     顺序取出元素的 `Sampler`
 
     """
-    
+
     def __call__(self, data_set):
         return list(range(len(data_set)))
 
@@ -45,7 +44,7 @@ class RandomSampler(Sampler):
     随机化取元素的 `Sampler`
 
     """
-    
+
     def __call__(self, data_set):
         return list(np.random.permutation(len(data_set)))
 
@@ -54,6 +53,7 @@ class BucketSampler(Sampler):
     r"""
     带Bucket的 `Random Sampler`. 可以随机地取出长度相似的元素
     """
+
     def __init__(self, num_buckets=10, batch_size=None, seq_len_field_name='seq_len'):
         r"""
         
@@ -79,20 +79,20 @@ class BucketSampler(Sampler):
             raise RuntimeError("batch_size is None.")
         seq_lens = data_set.get_all_fields()[self.seq_len_field_name].content
         total_sample_num = len(seq_lens)
-        
+
         bucket_indexes = []
         assert total_sample_num >= self.num_buckets, "The number of samples is smaller than the number of buckets."
         num_sample_per_bucket = total_sample_num // self.num_buckets
         for i in range(self.num_buckets):
             bucket_indexes.append([num_sample_per_bucket * i, num_sample_per_bucket * (i + 1)])
         bucket_indexes[-1][1] = total_sample_num
-        
+
         sorted_seq_lens = list(sorted([(idx, seq_len) for
                                        idx, seq_len in zip(range(total_sample_num), seq_lens)],
                                       key=lambda x: x[1]))
-        
+
         batchs = []
-        
+
         left_init_indexes = []
         for b_idx in range(self.num_buckets):
             start_idx = bucket_indexes[b_idx][0]
@@ -107,7 +107,7 @@ class BucketSampler(Sampler):
         if (left_init_indexes) != 0:
             batchs.append(left_init_indexes)
         np.random.shuffle(batchs)
-        
+
         return list(chain(*batchs))
 
 
@@ -129,6 +129,7 @@ class ConstantTokenNumSampler:
     >>>             batch_size=1, sampler=None, drop_last=False, update_every=1)
 
     """
+
     def __init__(self, seq_len, max_token=4096, max_sentence=-1, need_be_multiple_of=1, num_bucket=-1):
         """
 
@@ -138,8 +139,8 @@ class ConstantTokenNumSampler:
         :param int need_be_multiple_of: 生成的batch的instance的数量需要是几的倍数，在DataParallel场景下会用到
         :param int num_bucket: 将数据按长度拆分为num_bucket个bucket，batch中的sample尽量在bucket之中进行组合，这样可以减少padding。
         """
-        assert (max_sentence!=-1 and max_sentence>=need_be_multiple_of) or max_sentence<1
-        assert len(seq_len)>num_bucket, "The number of samples should be larger than buckets."
+        assert (max_sentence != -1 and max_sentence >= need_be_multiple_of) or max_sentence < 1
+        assert len(seq_len) > num_bucket, "The number of samples should be larger than buckets."
         self.seq_len = seq_len
         self.max_token = max_token
         self._max_sentence = max_sentence
@@ -147,11 +148,11 @@ class ConstantTokenNumSampler:
         seq_len_indice = [(length, i) for i, length in enumerate(seq_len)]
         seq_len_indice.sort(key=lambda x: x[0])
         indice_in_buckets = []
-        if num_bucket>0:
-            sample_per_bucket = len(seq_len_indice)//num_bucket
+        if num_bucket > 0:
+            sample_per_bucket = len(seq_len_indice) // num_bucket
             i = 0
-            while len(indice_in_buckets)<len(seq_len_indice):
-                indice_in_buckets.append(seq_len_indice[i*sample_per_bucket:(i+1)*sample_per_bucket])
+            while len(indice_in_buckets) < len(seq_len_indice):
+                indice_in_buckets.append(seq_len_indice[i * sample_per_bucket:(i + 1) * sample_per_bucket])
                 i += 1
         else:
             indice_in_buckets = [seq_len_indice]
@@ -160,7 +161,7 @@ class ConstantTokenNumSampler:
 
     @property
     def max_sentence(self):
-        if self._max_sentence<1:
+        if self._max_sentence < 1:
             return 100000000
         return self._max_sentence
 
@@ -178,18 +179,19 @@ class ConstantTokenNumSampler:
         batch = []
         for length, i in indices:
             max_len = max(length, cur_max_len)
-            if max_len*(len(batch)+1)>self.max_token or len(batch)>=self.max_sentence:
+            if max_len * (len(batch) + 1) > self.max_token or len(batch) >= self.max_sentence:
                 left_sample = len(batch) % self.need_be_multiple_of
                 add_samples = batch.copy()
-                cur_max_len =length
-                if left_sample!=0:
+                cur_max_len = length
+                if left_sample != 0:
                     add_samples = add_samples[:-left_sample]
                     batch = batch[-left_sample:]
                     cur_max_len = max(cur_max_len, max(batch))
                 else:
                     batch = []
-                if len(add_samples)==0:
-                    raise RuntimeError(f"The sample `{i}` is too long to make a batch with {self.need_be_multiple_of} samples.")
+                if len(add_samples) == 0:
+                    raise RuntimeError(
+                        f"The sample `{i}` is too long to make a batch with {self.need_be_multiple_of} samples.")
                 batches.append(add_samples)
             else:
                 cur_max_len = max_len
@@ -217,6 +219,7 @@ class SortedSampler(Sampler):
     r"""
     按照sample的长度进行排序，主要在测试的时候使用，可以加速测试（因为减少了padding）
     """
+
     def __init__(self, seq_len_field_name='seq_len', descending=True):
         """
 
@@ -268,10 +271,10 @@ def k_means_1d(x, k, max_iter=100):
     if len(sorted_x) < k:
         raise ValueError("too few buckets")
     gap = len(sorted_x) / k
-    
+
     centroids = np.array([sorted_x[int(x * gap)] for x in range(k)])
     assign = None
-    
+
     for i in range(max_iter):
         # Cluster Assignment step
         assign = np.array([np.argmin([np.absolute(x_i - x) for x in centroids]) for x_i in x])
@@ -303,7 +306,7 @@ def k_means_bucketing(lengths, buckets):
     bucket_data = [[] for _ in buckets]
     num_buckets = len(buckets)
     _, assignments = k_means_1d(lengths, num_buckets)
-    
+
     for idx, bucket_id in enumerate(assignments):
         if buckets[bucket_id] is None or lengths[idx] <= buckets[bucket_id]:
             bucket_data[bucket_id].append(idx)

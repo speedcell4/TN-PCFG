@@ -321,13 +321,13 @@ __all__ = [
     "Trainer"
 ]
 
+import numpy as np
 import os
 import time
-from datetime import datetime, timedelta
-
-import numpy as np
 import torch
 import torch.nn as nn
+from datetime import datetime
+from datetime import timedelta
 
 try:
     from tqdm.auto import tqdm
@@ -367,7 +367,7 @@ class Trainer(object):
     
     详细的介绍参见 :mod:`fastNLP.core.trainer`
     """
-    
+
     def __init__(self, train_data, model, optimizer=None, loss=None,
                  batch_size=32, sampler=None, drop_last=False, update_every=1,
                  num_workers=0, n_epochs=10, print_every=5,
@@ -461,7 +461,7 @@ class Trainer(object):
         if isinstance(train_data, BatchIter):
             if sampler is not None:
                 warnings.warn("sampler is ignored when train_data is a BatchIter.")
-            if num_workers>0:
+            if num_workers > 0:
                 warnings.warn("num_workers is ignored when train_data is BatchIter.")
             if drop_last:
                 warnings.warn("drop_last is ignored when train_data is BatchIter.")
@@ -483,7 +483,8 @@ class Trainer(object):
         else:
             # sampler check
             if sampler is not None and not isinstance(sampler, (Sampler, torch.utils.data.Sampler)):
-                raise ValueError(f"The type of sampler should be fastNLP.BaseSampler or pytorch's Sampler, got {type(sampler)}")
+                raise ValueError(
+                    f"The type of sampler should be fastNLP.BaseSampler or pytorch's Sampler, got {type(sampler)}")
             if sampler is None:
                 sampler = RandomSampler()
             elif hasattr(sampler, 'set_batch_size'):
@@ -515,11 +516,12 @@ class Trainer(object):
             check_batch_size = min(batch_size, DEFAULT_CHECK_BATCH_SIZE)
             if isinstance(self.model, nn.DataParallel):
                 _num_devices = len(self.model.device_ids)
-                if batch_size//_num_devices>1:  # 如果多卡是每个卡可以分多个数据的，则用每个卡给两个sample
-                    check_batch_size = max(len(self.model.device_ids)*2, check_batch_size)
+                if batch_size // _num_devices > 1:  # 如果多卡是每个卡可以分多个数据的，则用每个卡给两个sample
+                    check_batch_size = max(len(self.model.device_ids) * 2, check_batch_size)
                 else:
                     check_batch_size = max(len(self.model.device_ids), check_batch_size)
-            _check_code(dataset=train_data, model=self.model, losser=losser, forward_func=self._forward_func, metrics=metrics,
+            _check_code(dataset=train_data, model=self.model, losser=losser, forward_func=self._forward_func,
+                        metrics=metrics,
                         dev_data=dev_dataset, metric_key=self.metric_key, check_level=check_code_level,
                         batch_size=check_batch_size)
 
@@ -703,13 +705,14 @@ class Trainer(object):
                     if (self.validate_every > 0 and self.step % self.validate_every == 0) \
                             and self.dev_data is not None:
                         eval_res = self._do_validation(epoch=epoch, step=self.step)
-                        eval_str = "Evaluation on dev at Epoch {}/{}. Step:{}/{}: ".format(epoch, self.n_epochs, self.step,
-                                                                                    self.n_steps)
+                        eval_str = "Evaluation on dev at Epoch {}/{}. Step:{}/{}: ".format(epoch, self.n_epochs,
+                                                                                           self.step,
+                                                                                           self.n_steps)
                         # pbar.write(eval_str + '\n')
                         self.logger.info(eval_str)
-                        self.logger.info(self.tester._format_eval_results(eval_res)+'\n')
+                        self.logger.info(self.tester._format_eval_results(eval_res) + '\n')
                 # ================= mini-batch end ==================== #
-                if self.validate_every<0 and self.dev_data is not None:  # 在epoch结束之后的evaluate
+                if self.validate_every < 0 and self.dev_data is not None:  # 在epoch结束之后的evaluate
                     eval_res = self._do_validation(epoch=epoch, step=self.step)
                     eval_str = "Evaluation on dev at Epoch {}/{}. Step:{}/{}: ".format(epoch, self.n_epochs, self.step,
                                                                                        self.n_steps)
@@ -776,7 +779,7 @@ class Trainer(object):
 
         For PyTorch, just do "loss.backward()"
         """
-        if (self.step-1) % self.update_every == 0:
+        if (self.step - 1) % self.update_every == 0:
             self.model.zero_grad()
         loss.backward()
 
@@ -860,6 +863,7 @@ class Trainer(object):
         r"""是否是主进程"""
         return True
 
+
 DEFAULT_CHECK_BATCH_SIZE = 2
 DEFAULT_CHECK_NUM_BATCH = 2
 
@@ -914,7 +918,7 @@ def _check_code(dataset, model, losser, metrics, forward_func, batch_size=DEFAUL
         func_signature = _get_func_signature(forward_func)
         if not isinstance(pred_dict, dict):
             raise TypeError(f"The return value of {func_signature} should be `dict`, not `{type(pred_dict)}`.")
-        
+
         # loss check
         try:
             loss = losser(pred_dict, batch_y)
@@ -938,7 +942,7 @@ def _check_code(dataset, model, losser, metrics, forward_func, batch_size=DEFAUL
         model.zero_grad()
         if batch_count + 1 >= DEFAULT_CHECK_NUM_BATCH:
             break
-    
+
     if dev_data is not None:
         tester = Tester(data=dev_data[:batch_size * DEFAULT_CHECK_NUM_BATCH], model=model, metrics=metrics,
                         batch_size=batch_size, verbose=-1, use_tqdm=False)
@@ -952,10 +956,10 @@ def _check_eval_results(metrics, metric_key, metric_list):
     # metric_list: 多个用来做评价的指标，来自Trainer的初始化
     if isinstance(metrics, tuple):
         loss, metrics = metrics
-    
+
     if isinstance(metrics, dict):
         metric_dict = list(metrics.values())[0]  # 取第一个metric
-        
+
         if metric_key is None:
             indicator_val, indicator = list(metric_dict.values())[0], list(metric_dict.keys())[0]
         else:

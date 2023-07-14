@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from collections import Counter, defaultdict
 import torch
+from collections import Counter
+from collections import defaultdict
 
 
 class Metric(object):
@@ -22,6 +23,7 @@ class Metric(object):
     def score(self):
         return -1e9
 
+
 class UF1(Metric):
     def __init__(self, eps=1e-8, device=torch.device("cuda")):
         super(UF1, self).__init__()
@@ -34,24 +36,23 @@ class UF1(Metric):
         self.fn = 0.0
         self.device = device
 
-
     def __call__(self, preds, golds):
         for pred, gold in zip(preds, golds):
             # in the case of sentence length=1
             if len(pred) == 0:
                 continue
-            length = max(gold,key=lambda x:x[1])[1]
-            #removing the trival span
-            gold = list(filter(lambda x: x[0]+1 != x[1], gold))
-            pred = list(filter(lambda x: x[0]+1 != x[1], pred))
-            #remove the entire sentence span.
-            gold = list(filter(lambda x: not (x[0]==0 and x[1]==length), gold))
-            pred = list(filter(lambda x: not (x[0]==0 and x[1]==length), pred))
-            #remove label.
+            length = max(gold, key=lambda x: x[1])[1]
+            # removing the trival span
+            gold = list(filter(lambda x: x[0] + 1 != x[1], gold))
+            pred = list(filter(lambda x: x[0] + 1 != x[1], pred))
+            # remove the entire sentence span.
+            gold = list(filter(lambda x: not (x[0] == 0 and x[1] == length), gold))
+            pred = list(filter(lambda x: not (x[0] == 0 and x[1] == length), pred))
+            # remove label.
             gold = [g[:2] for g in gold]
             pred = [p[:2] for p in pred]
             gold = list(map(tuple, gold))
-            #corpus f1
+            # corpus f1
             for span in pred:
                 if span in gold:
                     self.tp += 1
@@ -61,8 +62,8 @@ class UF1(Metric):
                 if span not in pred:
                     self.fn += 1
 
-            #sentence f1
-            #remove duplicated span.
+            # sentence f1
+            # remove duplicated span.
             gold = set(gold)
             pred = set(pred)
             overlap = pred.intersection(gold)
@@ -98,6 +99,7 @@ class UF1(Metric):
         s = f"Sentence F1: {self.sentence_uf1:6.2%} Corpus F1: {self.corpus_uf1:6.2%} "
         return s
 
+
 class UAS(Metric):
     def __init__(self, eps=1e-8):
         super(Metric, self).__init__()
@@ -110,7 +112,7 @@ class UAS(Metric):
 
     @property
     def score(self):
-        return   self.direct_correct / self.total
+        return self.direct_correct / self.total
 
     def __call__(self, predicted_arcs, gold_arcs):
 
@@ -118,7 +120,7 @@ class UAS(Metric):
             assert len(pred) == len(gold)
 
             if len(pred) > 0:
-                self.total_sentence+=1.
+                self.total_sentence += 1.
 
             for (head, child) in pred:
                 if gold[int(child)] == int(head) + 1:
@@ -130,13 +132,11 @@ class UAS(Metric):
                 elif gold[int(head)] == int(child) + 1:
                     self.undirect_correct += 1.
 
-
-
                 self.total += 1.
 
-
     def __repr__(self):
-        return "UDAS: {}, UUAS:{}, root:{} ".format(self.score, self.undirect_correct/self.total, self.correct_root/self.total_sentence)
+        return "UDAS: {}, UUAS:{}, root:{} ".format(self.score, self.undirect_correct / self.total,
+                                                    self.correct_root / self.total_sentence)
 
 
 class LossMetric(Metric):
@@ -148,7 +148,6 @@ class LossMetric(Metric):
         self.total_kl = 0.0
         self.calling_time = 0
 
-
     def __call__(self, likelihood):
         self.calling_time += 1
         self.total += likelihood.shape[0]
@@ -158,9 +157,9 @@ class LossMetric(Metric):
     def avg_loss(self):
         return self.total_likelihood / self.total
 
-
     def __repr__(self):
-        return "avg likelihood: {} kl: {}, total likelihood:{}, n:{}".format(self.avg_likelihood,self.avg_kl,self.total_likelihood, self.total)
+        return "avg likelihood: {} kl: {}, total likelihood:{}, n:{}".format(self.avg_likelihood, self.avg_kl,
+                                                                             self.total_likelihood, self.total)
 
     @property
     def score(self):
@@ -179,9 +178,7 @@ class LikelihoodMetric(Metric):
     def score(self):
         return self.avg_likelihood
 
-
     def __call__(self, likelihood, lens):
-
         self.total += likelihood.shape[0]
         self.total_likelihood += likelihood.detach_().sum()
         # Follow Yoon Kim
@@ -191,13 +188,9 @@ class LikelihoodMetric(Metric):
     def avg_likelihood(self):
         return self.total_likelihood / self.total
 
-
     @property
     def perplexity(self):
         return (-self.total_likelihood / self.total_word).exp()
 
     def __repr__(self):
         return "avg likelihood: {}, perp. :{}".format(self.avg_likelihood, self.perplexity)
-
-
-

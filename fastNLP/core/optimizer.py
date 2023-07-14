@@ -19,7 +19,7 @@ class Optimizer(object):
     r"""
     Optimizer
     """
-    
+
     def __init__(self, model_params, **kwargs):
         r"""
         
@@ -30,7 +30,7 @@ class Optimizer(object):
             raise RuntimeError("model parameters should be a generator, rather than {}.".format(type(model_params)))
         self.model_params = model_params
         self.settings = kwargs
-    
+
     def construct_from_pytorch(self, model_params):
         raise NotImplementedError
 
@@ -50,6 +50,7 @@ class NullOptimizer(Optimizer):
     当不希望Trainer更新optimizer时，传入本optimizer，但请确保通过callback的方式对参数进行了更新。
 
     """
+
     def __init__(self):
         super().__init__(None)
 
@@ -67,7 +68,7 @@ class SGD(Optimizer):
     r"""
     SGD
     """
-    
+
     def __init__(self, lr=0.001, momentum=0, model_params=None):
         r"""
         :param float lr: learning rate. Default: 0.01
@@ -77,7 +78,7 @@ class SGD(Optimizer):
         if not isinstance(lr, float):
             raise TypeError("learning rate has to be float.")
         super(SGD, self).__init__(model_params, lr=lr, momentum=momentum)
-    
+
     def construct_from_pytorch(self, model_params):
         if self.model_params is None:
             # careful! generator cannot be assigned.
@@ -90,7 +91,7 @@ class Adam(Optimizer):
     r"""
     Adam
     """
-    
+
     def __init__(self, lr=0.001, weight_decay=0, betas=(0.9, 0.999), eps=1e-8, amsgrad=False, model_params=None):
         r"""
         
@@ -104,7 +105,7 @@ class Adam(Optimizer):
             raise TypeError("learning rate has to be float.")
         super(Adam, self).__init__(model_params, lr=lr, betas=betas, eps=eps, amsgrad=amsgrad,
                                    weight_decay=weight_decay)
-    
+
     def construct_from_pytorch(self, model_params):
         if self.model_params is None:
             # careful! generator cannot be assigned.

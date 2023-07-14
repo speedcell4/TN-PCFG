@@ -35,19 +35,20 @@ class CWSLoader(Loader):
        "..."
        
     """
-    def __init__(self, dataset_name:str=None):
+
+    def __init__(self, dataset_name: str = None):
         r"""
         
         :param str dataset_name: data的名称，支持pku, msra, cityu(繁体), as(繁体), None
         """
         super().__init__()
-        datanames = {'pku': 'cws-pku', 'msra':'cws-msra', 'as':'cws-as', 'cityu':'cws-cityu'}
+        datanames = {'pku': 'cws-pku', 'msra': 'cws-msra', 'as': 'cws-as', 'cityu': 'cws-cityu'}
         if dataset_name in datanames:
             self.dataset_name = datanames[dataset_name]
         else:
             self.dataset_name = None
 
-    def _load(self, path:str):
+    def _load(self, path: str):
         ds = DataSet()
         with open(path, 'r', encoding='utf-8') as f:
             for line in f:
@@ -56,7 +57,7 @@ class CWSLoader(Loader):
                     ds.append(Instance(raw_words=line))
         return ds
 
-    def download(self, dev_ratio=0.1, re_download=False)->str:
+    def download(self, dev_ratio=0.1, re_download=False) -> str:
         r"""
         如果你使用了该数据集，请引用以下的文章:Thomas Emerson, The Second International Chinese Word Segmentation Bakeoff,
         2005. 更多信息可以在http://sighan.cs.uchicago.edu/bakeoff2005/查看

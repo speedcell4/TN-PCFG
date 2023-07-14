@@ -68,7 +68,7 @@ class Tester(object):
     r"""
     Tester是在提供数据，模型以及metric的情况下进行性能测试的类。需要传入模型，数据以及metric进行验证。
     """
-    
+
     def __init__(self, data, model, metrics, batch_size=16, num_workers=0, device=None, verbose=1, use_tqdm=True,
                  **kwargs):
         r"""
@@ -99,9 +99,9 @@ class Tester(object):
 
         if not isinstance(model, nn.Module):
             raise TypeError(f"The type of model must be `torch.nn.Module`, got `{type(model)}`.")
-        
+
         self.metrics = _prepare_metrics(metrics)
-        
+
         self.data = data
         self._model = _move_model_to_device(model, device=device)
         self.batch_size = batch_size
@@ -114,7 +114,8 @@ class Tester(object):
             if sampler is None:
                 sampler = SequentialSampler()
             elif not isinstance(sampler, (Sampler, torch.utils.data.Sampler)):
-                raise ValueError(f"The type of sampler should be fastNLP.BaseSampler or pytorch's Sampler, got {type(sampler)}")
+                raise ValueError(
+                    f"The type of sampler should be fastNLP.BaseSampler or pytorch's Sampler, got {type(sampler)}")
             if hasattr(sampler, 'set_batch_size'):
                 sampler.set_batch_size(batch_size)
             self.data_iterator = DataSetIter(dataset=data, batch_size=batch_size, sampler=sampler,
@@ -130,8 +131,8 @@ class Tester(object):
                  callable(self._model.module.predict)):
             if isinstance(self._model, nn.DataParallel):
                 self._predict_func_wrapper = partial(_data_parallel_wrapper('predict',
-                                                                    self._model.device_ids,
-                                                                    self._model.output_device),
+                                                                            self._model.device_ids,
+                                                                            self._model.output_device),
                                                      network=self._model.module)
                 self._predict_func = self._model.module.predict  # 用于匹配参数
             elif isinstance(self._model, nn.parallel.DistributedDataParallel):
@@ -147,7 +148,7 @@ class Tester(object):
             else:
                 self._predict_func = self._model.forward
                 self._predict_func_wrapper = self._model.forward
-    
+
     def test(self):
         r"""开始进行验证，并返回验证结果。
 
@@ -204,7 +205,7 @@ class Tester(object):
         if self.verbose >= 1:
             logger.info("[tester] \n{}".format(self._format_eval_results(eval_results)))
         return eval_results
-    
+
     def _mode(self, model, is_test=False):
         r"""Train mode or Test mode. This is for PyTorch currently.
 
@@ -216,13 +217,13 @@ class Tester(object):
             model.eval()
         else:
             model.train()
-    
+
     def _data_forward(self, func, x):
         r"""A forward pass of the model. """
         x = _build_args(func, **x)
         y = self._predict_func_wrapper(**x)
         return y
-    
+
     def _format_eval_results(self, results):
         r"""Override this method to support more print formats.
 

@@ -4,12 +4,15 @@ r"""undocumented
 
 __all__ = []
 
-from typing import Optional, Tuple, List, Callable
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
+from torch.nn.utils.rnn import PackedSequence
+from torch.nn.utils.rnn import pad_packed_sequence
+from typing import Callable
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 from ..utils import get_dropout_mask
 
@@ -348,7 +351,7 @@ class ElmobiLm(torch.nn.Module):
 
         if initial_state is None:
             hidden_states: List[Optional[Tuple[torch.Tensor,
-                                               torch.Tensor]]] = [None] * len(self.forward_layers)
+            torch.Tensor]]] = [None] * len(self.forward_layers)
         elif initial_state[0].size()[0] != len(self.forward_layers):
             raise Exception("Initial states were passed to forward() but the number of "
                             "initial states does not match the number of layers.")
@@ -401,8 +404,8 @@ class ElmobiLm(torch.nn.Module):
         # respectively.
         final_hidden_states, final_memory_states = zip(*final_states)
         final_state_tuple: Tuple[torch.FloatTensor,
-                                 torch.FloatTensor] = (torch.cat(final_hidden_states, 0),
-                                                       torch.cat(final_memory_states, 0))
+        torch.FloatTensor] = (torch.cat(final_hidden_states, 0),
+                              torch.cat(final_memory_states, 0))
         return stacked_sequence_outputs, final_state_tuple
 
 

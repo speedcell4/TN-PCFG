@@ -6,29 +6,31 @@ __all__ = [
     'BertTokenizer'
 ]
 
-import os
 import collections
+import os
 import unicodedata
+
 from ...core import logger
-from ...io.file_utils import _get_file_name_base_on_postfix
 from ...io.file_utils import _get_bert_dir
+from ...io.file_utils import _get_file_name_base_on_postfix
 
 VOCAB_NAME = 'vocab.txt'
 
 PRETRAINED_INIT_CONFIGURATION = {
     "en": {"do_lower_case": False},
     "en-base-uncased": {'do_lower_case': True},
-    'en-base-cased': {'do_lower_case':False},
+    'en-base-cased': {'do_lower_case': False},
     "en-large-cased-wwm": {"do_lower_case": False},
-    'en-large-cased': {'do_lower_case':False},
-    'en-large-uncased': {'do_lower_case':True},
-    'en-large-uncased-wwm': {'do_lower_case':True},
-    'cn': {'do_lower_case':True},
+    'en-large-cased': {'do_lower_case': False},
+    'en-large-uncased': {'do_lower_case': True},
+    'en-large-uncased-wwm': {'do_lower_case': True},
+    'cn': {'do_lower_case': True},
     'cn-base': {'do_lower_case': True},
     'cn-wwm-ext': {'do_lower_case': True},
     'multi-base-cased': {'do_lower_case': False},
     'multi-base-uncased': {'do_lower_case': True},
 }
+
 
 def _is_control(char):
     r"""Checks whether `chars` is a control character."""
@@ -50,7 +52,7 @@ def _is_punctuation(char):
     # Punctuation class but we treat them as punctuation anyways, for
     # consistency.
     if (((cp >= 33) and (cp <= 47)) or ((cp >= 58) and (cp <= 64)) or
-       ((cp >= 91) and (cp <= 96)) or ((cp >= 123) and (cp <= 126))):
+            ((cp >= 91) and (cp <= 96)) or ((cp >= 123) and (cp <= 126))):
         return True
     cat = unicodedata.category(char)
     if cat.startswith("P"):
@@ -171,13 +173,13 @@ class BasicTokenizer(object):
         # space-separated words, so they are not treated specially and handled
         # like the all of the other languages.
         if (((cp >= 0x4E00) and (cp <= 0x9FFF)) or  #
-            ((cp >= 0x3400) and (cp <= 0x4DBF)) or  #
-            ((cp >= 0x20000) and (cp <= 0x2A6DF)) or  #
-            ((cp >= 0x2A700) and (cp <= 0x2B73F)) or  #
-            ((cp >= 0x2B740) and (cp <= 0x2B81F)) or  #
-            ((cp >= 0x2B820) and (cp <= 0x2CEAF)) or
-            ((cp >= 0xF900) and (cp <= 0xFAFF)) or  #
-            ((cp >= 0x2F800) and (cp <= 0x2FA1F))):  #
+                ((cp >= 0x3400) and (cp <= 0x4DBF)) or  #
+                ((cp >= 0x20000) and (cp <= 0x2A6DF)) or  #
+                ((cp >= 0x2A700) and (cp <= 0x2B73F)) or  #
+                ((cp >= 0x2B740) and (cp <= 0x2B81F)) or  #
+                ((cp >= 0x2B820) and (cp <= 0x2CEAF)) or
+                ((cp >= 0xF900) and (cp <= 0xFAFF)) or  #
+                ((cp >= 0x2F800) and (cp <= 0x2FA1F))):  #
             return True
 
         return False

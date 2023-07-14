@@ -1,25 +1,30 @@
 # TN-PCFG and NBL-PCFG
 
-source code of  
-- NAACL2021 [PCFGs Can Do Better: Inducing Probabilistic Context-Free Grammars with Many Symbols](https://www.aclweb.org/anthology/2021.naacl-main.117.pdf) 
+source code of
+
+-
+NAACL2021 [PCFGs Can Do Better: Inducing Probabilistic Context-Free Grammars with Many Symbols](https://www.aclweb.org/anthology/2021.naacl-main.117.pdf)
 - ACL2021 [Neural Bi-Lexicalzied PCFG Induction](http://faculty.sist.shanghaitech.edu.cn/faculty/tukw/acl21pcfg.pdf).
-- NAACL2022 [Dynamic Programming in Rank Space: Scaling Structured Inference with Low-Rank HMMs and PCFGs 
-](https://faculty.sist.shanghaitech.edu.cn/faculty/tukw/naacl22rank.pdf).
+- NAACL2022 [Dynamic Programming in Rank Space: Scaling Structured Inference with Low-Rank HMMs and PCFGs
+  ](https://faculty.sist.shanghaitech.edu.cn/faculty/tukw/naacl22rank.pdf).
 
 The repository also contain faster implementations of:
 
--  [Compound PCFG](https://www.aclweb.org/anthology/P19-1228/)
--  [Neural Lexicalized PCFG](https://www.aclweb.org/anthology/2020.tacl-1.42/)
-
+- [Compound PCFG](https://www.aclweb.org/anthology/P19-1228/)
+- [Neural Lexicalized PCFG](https://www.aclweb.org/anthology/2020.tacl-1.42/)
 
 ## News
-- 22/04: Our paper [Dynamic Programming in Rank Space: Scaling Structured Inference with Low-Rank HMMs and PCFGs](https://openreview.net/forum?id=KBpfIEHa9Th) has been accepted to NAACL2022.
 
-- 22/04: We highly optimize the implementation of the inside algorithms. We leverage the [log-einsum-exp trick](https://arxiv.org/abs/2004.06231) to avoid expensive logsumexp operations.
-           
+- 22/04: Our
+  paper [Dynamic Programming in Rank Space: Scaling Structured Inference with Low-Rank HMMs and PCFGs](https://openreview.net/forum?id=KBpfIEHa9Th)
+  has been accepted to NAACL2022.
+
+- 22/04: We highly optimize the implementation of the inside algorithms. We leverage
+  the [log-einsum-exp trick](https://arxiv.org/abs/2004.06231) to avoid expensive logsumexp operations.
+
 ## Setup
 
-prepare environment 
+prepare environment
 
 ```
 conda create -n pcfg python=3.7
@@ -29,7 +34,8 @@ while read requirement; do pip install $requirement; done < requirement.txt
 
 prepare dataset
 
-You can download the dataset and pretrained model (TN-PCFG and NBL-PCFG) from:  https://mega.nz/folder/OU5yiTjC#oeMYj1gBhqm2lRAdAvbOvw
+You can download the dataset and pretrained model (TN-PCFG and NBL-PCFG)
+from:  https://mega.nz/folder/OU5yiTjC#oeMYj1gBhqm2lRAdAvbOvw
 
 PTB:  ptb_cleaned.zip / CTB and SPRML: ctb_sprml_clean.zip
 
@@ -60,13 +66,11 @@ evaluate.py
 preprocessing.py
 ```
 
-
-
 ## Train
 
 **TN-PCFG**
 
-python train.py  --conf tnpcfg_r500_nt250_t500_curriculum0.yaml
+python train.py --conf tnpcfg_r500_nt250_t500_curriculum0.yaml
 
 **Compound PCFG**
 
@@ -86,12 +90,11 @@ log/
    	  ├── ...
 ```
 
-python evaluate.py --load_from_dir log/NBLPCFG2021-01-26-07_47_29  --decode_type mbr --eval_dep 1 
-
+python evaluate.py --load_from_dir log/NBLPCFG2021-01-26-07_47_29 --decode_type mbr --eval_dep 1
 
 ## Contact
 
-If you have any question, plz contact bestsonta@gmail.com. 
+If you have any question, plz contact bestsonta@gmail.com.
 
 ## Citation
 
@@ -129,8 +132,11 @@ If these codes help you, plz cite our paper:
     abstract = "Probabilistic context-free grammars (PCFGs) with neural parameterization have been shown to be effective in unsupervised phrase-structure grammar induction. However, due to the cubic computational complexity of PCFG representation and parsing, previous approaches cannot scale up to a relatively large number of (nonterminal and preterminal) symbols. In this work, we present a new parameterization form of PCFGs based on tensor decomposition, which has at most quadratic computational complexity in the symbol number and therefore allows us to use a much larger number of symbols. We further use neural parameterization for the new form to improve unsupervised parsing performance. We evaluate our model across ten languages and empirically demonstrate the effectiveness of using more symbols.",
 }
 ```
+
 ## Ack.
-We use [fastNLP](https://github.com/fastnlp/fastNLP) and the code template of [Supar](https://github.com/yzhangcs/parser)
+
+We use [fastNLP](https://github.com/fastnlp/fastNLP) and the code template
+of [Supar](https://github.com/yzhangcs/parser)
 
 
 

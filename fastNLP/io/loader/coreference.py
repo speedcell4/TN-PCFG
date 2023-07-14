@@ -4,11 +4,11 @@ __all__ = [
     "CoReferenceLoader",
 ]
 
-from ...core.dataset import DataSet
-from ..file_reader import _read_json
-from ...core.instance import Instance
-from ...core.const import Const
 from .json import JsonLoader
+from ..file_reader import _read_json
+from ...core.const import Const
+from ...core.dataset import DataSet
+from ...core.instance import Instance
 
 
 class CoReferenceLoader(JsonLoader):
@@ -32,6 +32,7 @@ class CoReferenceLoader(JsonLoader):
         "...", "...", "...", "..."
 
     """
+
     def __init__(self, fields=None, dropna=False):
         super().__init__(fields, dropna)
         self.fields = {"doc_key": Const.RAW_WORDS(0), "speakers": Const.RAW_WORDS(1), "clusters": Const.RAW_WORDS(2),

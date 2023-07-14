@@ -1,11 +1,13 @@
 import torch
-from parser.pcfgs.pcfgs import PCFG_base
 from torch.utils.checkpoint import checkpoint as ckp
+
+from parser.pcfgs.pcfgs import PCFG_base
 
 '''
 Refactor this file would kill me. It can run anyway.
 This is a reimplementation of the inside algorithm of (Zhu et al 2020)
 '''
+
 
 class L_PCFG(PCFG_base):
     def __init__(self):
@@ -27,8 +29,8 @@ class L_PCFG(PCFG_base):
         root = rules['root']
         rule = rules['rule']
         logZ = lexicalizedPCFG.apply(unary, rule, root)
-        return {'partition' : logZ}
-    
+        return {'partition': logZ}
+
     # parallel impl. but cubic in m
 
     @torch.enable_grad()
@@ -58,7 +60,6 @@ class L_PCFG(PCFG_base):
 
         span_indicator = root.new_zeros(B, N, N).requires_grad_(decoding)
 
-
         def reduce_lasttwo_ab(a, b):
             return (a + b).logsumexp([-1, -2])
 
@@ -73,7 +74,8 @@ class L_PCFG(PCFG_base):
                 headed = torch.zeros(B, n, 2, NT, T, T, device=torch.device('cuda')).fill_(-1e9)
                 headed[:, :, LEFT, ...] = Z_term[:, :, None, None, :] + rule[:, LEFT, :n, :, t_slice, t_slice]
                 headed[:, :, RIGHT, ...] = Y_term[:, :, None, :, None] + rule[:, RIGHT, w - 1:, :, t_slice, t_slice]
-                headed = headed.logsumexp([-1, -2]) + span_indicator[:, torch.arange(n), w+torch.arange(n), None, None]
+                headed = headed.logsumexp([-1, -2]) + span_indicator[:, torch.arange(n), w + torch.arange(n), None,
+                                                      None]
                 headed_closed = (headed + stripe_grammar_rules(unary_nt, n, w)).logsumexp(2)
                 diagonal_copy_v2(beta, headed, w)
                 diagonal_copy_(beta_closed, headed_closed, w)
@@ -94,35 +96,35 @@ class L_PCFG(PCFG_base):
                 yz = (y + z).logsumexp(2)
                 # print("fuck", yz)
                 headed[1, :, :, 2:] = ckp(reduce_lasttwo_ab, yz,
-                                                 stripe_grammar_rules(right_rule, n, w - 2, offset=2))
+                                          stripe_grammar_rules(right_rule, n, w - 2, offset=2))
                 x_0 = headed.logsumexp(0)
 
             y = Y_closed[:, :, -1, ...]
             z = Z_term
 
             headed_left = ckp(reduce_lasttwo_abc,
-                                     stripe_version_nt_t(beta, n, w - 1)[..., None, :, None].clone(),
-                                     stripe_grammar_rules(left_rule_nonterm, n, w - 1),
-                                     z[..., None, None, None, :])
+                              stripe_version_nt_t(beta, n, w - 1)[..., None, :, None].clone(),
+                              stripe_grammar_rules(left_rule_nonterm, n, w - 1),
+                              z[..., None, None, None, :])
 
             headed_right = ckp(reduce_lasttwo_ab,
-                                      y[..., None, None, :, None],
-                                      stripe_grammar_rules(right_rule_term, n, 1, offset=w - 1))
+                               y[..., None, None, :, None],
+                               stripe_grammar_rules(right_rule_term, n, 1, offset=w - 1))
             x_1 = torch.cat([headed_left, headed_right], dim=2)
             y = Y_term
             z = Z_closed[:, :, 0, ...]
             headed_left = (z[..., None, None, None, :] + stripe_grammar_rules(left_rule_term, n, 1)).logsumexp([-1, -2])
             headed_right = ckp(reduce_lasttwo_abc,
-                                      stripe_version_t_nt(beta, n, w - 1)[..., None, None, :].clone(),
-                                      stripe_grammar_rules(right_rule_nonterm, n, w - 1, offset=1),
-                                      y[..., None, None, :, None])
+                               stripe_version_t_nt(beta, n, w - 1)[..., None, None, :].clone(),
+                               stripe_grammar_rules(right_rule_nonterm, n, w - 1, offset=1),
+                               y[..., None, None, :, None])
             x_2 = torch.cat([headed_left, headed_right], dim=2)
             if w == 3:
                 x = torch.stack([x_1, x_2])
             else:
                 x = torch.stack([x_0, x_1, x_2])
             x = x.logsumexp(0)
-            x = x + span_indicator[:, torch.arange(n), w+torch.arange(n), None, None]
+            x = x + span_indicator[:, torch.arange(n), w + torch.arange(n), None, None]
             x_closed = (x + stripe_grammar_rules(unary_nt, n, w)).logsumexp(2)
             # if w < N-1:
             diagonal_copy_v2(beta, x, w)
@@ -139,7 +141,7 @@ class L_PCFG(PCFG_base):
 
     def _mbr(self, rules, lens, **kwargs):
         if lens.max() == 1:
-            return {'prediction' : [[] for _ in range(lens.shape[0])],
+            return {'prediction': [[] for _ in range(lens.shape[0])],
                     'prediction_arc': [[(-1, 0)] for _ in range(lens.shape[0])]}
 
         unary = rules['unary']
@@ -168,7 +170,7 @@ class L_PCFG(PCFG_base):
         left_rule_nonterm = rule[:, LEFT, :, :, nt_slice, t_slice].contiguous()
 
         with torch.enable_grad():
-            arc_indicator = torch.zeros(B, N-1, N-1, device=torch.device("cuda")).requires_grad_(True)
+            arc_indicator = torch.zeros(B, N - 1, N - 1, device=torch.device("cuda")).requires_grad_(True)
             span_indicator = torch.zeros(B, N, N, device=torch.device('cuda')).requires_grad_(True)
             root = root.unsqueeze(1).expand(B, H, NT).detach().clone().requires_grad_(True)
 
@@ -191,8 +193,16 @@ class L_PCFG(PCFG_base):
                     headed = torch.zeros(B, n, 2, NT, T, T, device=torch.device('cuda')).fill_(-1e9)
                     # print( Z_term[:, :, None, None, :].shape, rule[:, LEFT, :n, :, t_slice, t_slice].shape, arc_indicator[:, torch.arange(N) + 1, torch.arange(N).shape )
 
-                    headed[:, :, LEFT, ...] = Z_term[:, :, None, None, :] + rule[:, LEFT, :n, :, t_slice, t_slice] + arc_indicator[:, torch.arange(n) + 1, torch.arange(n), None, None, None]
-                    headed[:, :, RIGHT, ...] = Y_term[:, :, None, :, None] + rule[:, RIGHT, w - 1:, :, t_slice, t_slice] + arc_indicator[:, torch.arange(n), torch.arange(n) + 1 , None, None , None]
+                    headed[:, :, LEFT, ...] = Z_term[:, :, None, None, :] + rule[:, LEFT, :n, :, t_slice,
+                                                                            t_slice] + arc_indicator[:,
+                                                                                       torch.arange(n) + 1,
+                                                                                       torch.arange(n), None, None,
+                                                                                       None]
+                    headed[:, :, RIGHT, ...] = Y_term[:, :, None, :, None] + rule[:, RIGHT, w - 1:, :, t_slice,
+                                                                             t_slice] + arc_indicator[:,
+                                                                                        torch.arange(n),
+                                                                                        torch.arange(n) + 1, None, None,
+                                                                                        None]
                     headed = headed.logsumexp([-1, -2])
                     headed = headed + span_indicator[:, torch.arange(n), torch.arange(n) + w, None, None]
 
@@ -208,7 +218,6 @@ class L_PCFG(PCFG_base):
                     else:
                         final = (headed + stripe_grammar_rules(unary_nt, n, w))
 
-
                     continue
 
                 Y_closed = stripe_version2(beta_closed, n, w - 1, (0, 1)).clone()
@@ -218,33 +227,33 @@ class L_PCFG(PCFG_base):
                     headed = torch.zeros(2, B, n, w, NT, device=torch.device('cuda')).fill_(-1e9)
                     y = stripe_version_nt_nt(beta, n, w - 1, (0, 1))[..., None, :, None]
                     # print(y.shape)
-                    z = Z_closed[:, :,  1:-1,  1:-1, None, None, :]
+                    z = Z_closed[:, :, 1:-1, 1:-1, None, None, :]
                     # print(z.shape)
                     # print(y.shape, z.shape, "??????")
 
                     yz = (y + z).logsumexp(2)
-                    headed[0, :, :,  :-2] = ckp(reduce_lasttwo_ab, yz, stripe_grammar_rules(left_rule, n, w - 2))
-                    y = Y_closed[:, :,   1:-1,  1:-1,  None, :, None]
+                    headed[0, :, :, :-2] = ckp(reduce_lasttwo_ab, yz, stripe_grammar_rules(left_rule, n, w - 2))
+                    y = Y_closed[:, :, 1:-1, 1:-1, None, :, None]
                     z = stripe_version_nt_nt(beta, n, w - 1, (1, w), 0)[..., None, None, :]
                     yz = (y + z).logsumexp(2)
 
                     headed[1, :, :, 2:] = ckp(reduce_lasttwo_ab, yz,
-                                                     stripe_grammar_rules(right_rule, n, w - 2, offset=2))
+                                              stripe_grammar_rules(right_rule, n, w - 2, offset=2))
                     x_0 = headed.logsumexp(0)
 
                 y = Y_closed[:, :, -1, None, -1, ...]
                 z = Z_term
 
                 headed_left = ckp(reduce_lasttwo_abc,
-                                         stripe_version_nt_t(beta, n, w - 1)[..., None, :, None].clone(),
-                                         stripe_grammar_rules(left_rule_nonterm, n, w - 1),
-                                         z[..., None,  None, None, :])
+                                  stripe_version_nt_t(beta, n, w - 1)[..., None, :, None].clone(),
+                                  stripe_grammar_rules(left_rule_nonterm, n, w - 1),
+                                  z[..., None, None, None, :])
 
                 # print(stripe_grammar_rules(right_rule_term, n, 1, offset=w - 1).shape)
                 # print(y.shape)
                 headed_right = ckp(reduce_lasttwo_ab,
-                                          y[...,  None, :, None],
-                                          stripe_grammar_rules(right_rule_term, n, 1, offset=w - 1))
+                                   y[..., None, :, None],
+                                   stripe_grammar_rules(right_rule_term, n, 1, offset=w - 1))
                 # print(headed_right.shape, "suppose to 1.")
 
                 x_1 = torch.cat([headed_left, headed_right], dim=2)
@@ -253,14 +262,13 @@ class L_PCFG(PCFG_base):
 
                 z = Z_closed[:, :, 0, None, 0, ...]
 
-
-                headed_left = (z[...,  None, None, :] + stripe_grammar_rules(left_rule_term, n, 1)).logsumexp(
+                headed_left = (z[..., None, None, :] + stripe_grammar_rules(left_rule_term, n, 1)).logsumexp(
                     [-1, -2])
 
                 headed_right = ckp(reduce_lasttwo_abc,
-                                          stripe_version_t_nt(beta, n, w - 1)[..., None, None, :].clone(),
-                                          stripe_grammar_rules(right_rule_nonterm, n, w - 1, offset=1),
-                                          y[...,  None, None, :, None])
+                                   stripe_version_t_nt(beta, n, w - 1)[..., None, None, :].clone(),
+                                   stripe_grammar_rules(right_rule_nonterm, n, w - 1, offset=1),
+                                   y[..., None, None, :, None])
 
                 x_2 = torch.cat([headed_left, headed_right], dim=2)
                 if w == 3:
@@ -278,9 +286,9 @@ class L_PCFG(PCFG_base):
                 if w < N - 1:
                     (x + stripe_grammar_rules(unary_nt, n, w)).logsumexp(2)
                     x_closed = (x.unsqueeze(-2) +
-                                 stripe_grammar_rules(unary_nt, n, w).unsqueeze(-2) +
-                                 stripe_grammar_rules(arc_indicator, n, w).unsqueeze(-1)
-                                 ).logsumexp(2)
+                                stripe_grammar_rules(unary_nt, n, w).unsqueeze(-2) +
+                                stripe_grammar_rules(arc_indicator, n, w).unsqueeze(-1)
+                                ).logsumexp(2)
                     diagonal_copy_v2(beta, x, w)
                     diagonal_copy_(beta_closed, x_closed, w)
                 else:
@@ -308,7 +316,6 @@ class L_PCFG(PCFG_base):
                     'prediction_arc': arc_prediction}
 
 
-
 class lexicalizedPCFG(torch.autograd.Function):
 
     @staticmethod
@@ -329,12 +336,12 @@ class lexicalizedPCFG(torch.autograd.Function):
         for i in range(N - 1):
             if i > 0:
                 s_need_dad[:, i, i + 1, :i] = (
-                            unary[:, i, None, None, None, t_slice] + rule[:, LEFT, :i, :, nt_slice, t_slice]).logsumexp(
+                        unary[:, i, None, None, None, t_slice] + rule[:, LEFT, :i, :, nt_slice, t_slice]).logsumexp(
                     -1)
             if i < N - 1:
                 s_need_dad[:, i, i + 1, i + 1:] = (
-                            unary[:, i, None, None, t_slice, None] + rule[:, RIGHT, i + 1:, :, t_slice,
-                                                                     nt_slice]).logsumexp(-2)
+                        unary[:, i, None, None, t_slice, None] + rule[:, RIGHT, i + 1:, :, t_slice,
+                                                                 nt_slice]).logsumexp(-2)
 
         LEFT = 0
         RIGHT = 1
@@ -344,11 +351,11 @@ class lexicalizedPCFG(torch.autograd.Function):
             if w == 2:
                 headed = torch.zeros(B, n, w, NT, T, T, device=torch.device("cuda")).fill_(-1e9)
                 headed[:, :, LEFT, ...] = (
-                            unary[:, torch.arange(n) + 1, None, None, t_slice] + rule[:, LEFT, torch.arange(n), :,
-                                                                                 t_slice, t_slice])
-                headed[:, :, RIGHT, ...] = (
-                            unary[:, torch.arange(n), None, t_slice, None] + rule[:, RIGHT, torch.arange(n) + 1, :,
+                        unary[:, torch.arange(n) + 1, None, None, t_slice] + rule[:, LEFT, torch.arange(n), :,
                                                                              t_slice, t_slice])
+                headed[:, :, RIGHT, ...] = (
+                        unary[:, torch.arange(n), None, t_slice, None] + rule[:, RIGHT, torch.arange(n) + 1, :,
+                                                                         t_slice, t_slice])
                 headed = headed.logsumexp([-1, -2])
                 diagonal_copy_v2(s, headed, w)
             else:
@@ -384,7 +391,7 @@ class lexicalizedPCFG(torch.autograd.Function):
                         sss[:, l, :l] = (headed[:, l, None, None, None, :] + rule[:, LEFT, :l, :, nt_slice, nt_slice])
                     if r < N - 1:
                         sss[:, l, l:] = (
-                                    headed[:, l, None, None, None, :] + rule_t[:, RIGHT, r:, :, nt_slice, nt_slice])
+                                headed[:, l, None, None, None, :] + rule_t[:, RIGHT, r:, :, nt_slice, nt_slice])
                 sss = sss.logsumexp(-1)
                 for l in range(N - w):
                     r = w + l
@@ -402,7 +409,7 @@ class lexicalizedPCFG(torch.autograd.Function):
         out_need_dad = torch.zeros(B, N, N, H, NT, NT, device=torch.device('cuda'))
         gradient_root = (s_final - logZ.unsqueeze(-1)).exp_()
         out_closed[:, 0, -1, ] = (gradient_root.unsqueeze(-2) * (
-                    s[:, 0, -1] + unary[:, :, nt_slice] - s_closed[:, 0, -1].unsqueeze(-2)).exp_()).sum(1)
+                s[:, 0, -1] + unary[:, :, nt_slice] - s_closed[:, 0, -1].unsqueeze(-2)).exp_()).sum(1)
 
         for w in range(N - 1, 0, -1):
             n = N - w
@@ -420,7 +427,7 @@ class lexicalizedPCFG(torch.autograd.Function):
                         out_need_dad_gradient[:, l, :l] = out_need_dad[:, l, r, :l]
                     if r < N - 1:
                         out_s_need_dad[:, l, l:, ...] = (
-                                    rule_t[:, RIGHT, r:, :, nt_slice, nt_slice] - s_need_dad[:, l, r, r:].unsqueeze(-1))
+                                rule_t[:, RIGHT, r:, :, nt_slice, nt_slice] - s_need_dad[:, l, r, r:].unsqueeze(-1))
                         out_need_dad_gradient[:, l, l:] = out_need_dad[:, l, r, r:]
 
                 out_s_need_dad.add_(headed_closed[:, :, None, None, None, :]).exp_().mul_(
@@ -530,19 +537,6 @@ class lexicalizedPCFG(torch.autograd.Function):
         return ctx.unary_gradient * multiplier, ctx.rule_gradient * multiplier, (ctx.root_gradient * multiplier)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 # input: batch * child * head * nt * nt * nt
 # output: batch * (n-1) * (w-1) * w * nt * nt * nt
 def stripe_need_left_parent(x, n, w, offset=(0, 0), dim=1):
@@ -584,8 +578,9 @@ def stripe_right(x, n, w, offset=(0, 0), dim=1):
 
     return x.as_strided(size=(x.shape[0], n, *list(x.shape[3:])),
                         stride=stride,
-                        storage_offset=(offset[0] * seq_len + offset[1]) * numel) +  (w-1) * numel * (
-               1 if dim == 0 else seq_len)
+                        storage_offset=(offset[0] * seq_len + offset[1]) * numel) + (w - 1) * numel * (
+        1 if dim == 0 else seq_len)
+
 
 def stripe_proper(x, n, w, offset=(0, 0), dim=1):
     x, seq_len = x.contiguous(), x.size(2)
@@ -594,20 +589,17 @@ def stripe_proper(x, n, w, offset=(0, 0), dim=1):
     stride[1] = (seq_len + 1) * numel
     stride[2] = (1 if dim == 1 else seq_len) * numel
     if len(x.shape) > 3:
-        return x.as_strided(size=(x.shape[0], n, w-2, *list(x.shape[3:])),
+        return x.as_strided(size=(x.shape[0], n, w - 2, *list(x.shape[3:])),
                             stride=stride,
-                            storage_offset=(offset[0] * seq_len + offset[1]) * numel + numel * (1 if dim == 0 else seq_len))
+                            storage_offset=(offset[0] * seq_len + offset[1]) * numel + numel * (
+                                1 if dim == 0 else seq_len))
     else:
         raise NotImplementedError
-
 
     # else:
     #     return x.as_strided(size=(x.shape[0], n, w),
     #                         stride=stride,
     #                         storage_offset=(offset[0] * seq_len + offset[1]) * numel)
-
-
-
 
 
 def stripe(x, n, w, offset=(0, 0), dim=1):
@@ -625,7 +617,8 @@ def stripe(x, n, w, offset=(0, 0), dim=1):
                             stride=stride,
                             storage_offset=(offset[0] * seq_len + offset[1]) * numel)
 
-def stripe_logadd1(x, value,  n, w,  offset=(0, 0), dim=1):
+
+def stripe_logadd1(x, value, n, w, offset=(0, 0), dim=1):
     x, seq_len = x.contiguous(), x.size(2)
     stride = list(x.stride())
     numel = stride[2]
@@ -633,8 +626,8 @@ def stripe_logadd1(x, value,  n, w,  offset=(0, 0), dim=1):
     stride[2] = (1 if dim == 1 else seq_len) * numel
     if len(x.shape) > 3:
         tmp = x.as_strided(size=(x.shape[0], n, w, *list(x.shape[3:])),
-                            stride=stride,
-                            storage_offset=(offset[0] * seq_len + offset[1]) * numel)
+                           stride=stride,
+                           storage_offset=(offset[0] * seq_len + offset[1]) * numel)
         x.as_strided(size=(x.shape[0], n, w, *list(x.shape[3:])),
                      stride=stride,
                      storage_offset=(offset[0] * seq_len + offset[1] + 1) * numel).copy_(torch.logaddexp(tmp, value))
@@ -645,21 +638,17 @@ def stripe_logadd1(x, value,  n, w,  offset=(0, 0), dim=1):
                             storage_offset=(offset[0] * seq_len + offset[1]) * numel)
 
 
-
-
 def logbmmexp(x, y):
     x = x.contiguous()
     y = y.contiguous()
     return (x.unsqueeze(-1) + y.unsqueeze(-3)).logsumexp(-2)
 
+
 def maxbmm(x, y):
     return (x.unsqueeze(-1) + y.unsqueeze(-3)).max(-2)[0]
 
 
-
-
-
-def stripe_grammar_rules(x, n, w, offset=0, addition = 0):
+def stripe_grammar_rules(x, n, w, offset=0, addition=0):
     x, seq_len = x.contiguous(), x.size(2)
     stride = list(x.stride())
     new_stride = []
@@ -668,11 +657,7 @@ def stripe_grammar_rules(x, n, w, offset=0, addition = 0):
     new_stride.append(stride[1])
     new_stride.extend(stride[2:])
     return x.as_strided(size=(x.shape[0], n, w, *x.shape[2:]),
-                            stride=new_stride, storage_offset= offset*(stride[1]))
-
-
-
-
+                        stride=new_stride, storage_offset=offset * (stride[1]))
 
 
 def stripe_version3(x, n, w, offset=0):
@@ -680,12 +665,13 @@ def stripe_version3(x, n, w, offset=0):
     stride = list(x.stride())
     new_stride = []
     new_stride.append(stride[0])
-    new_stride.append(stride[1]+stride[2])
+    new_stride.append(stride[1] + stride[2])
     new_stride.append(stride[1])
     new_stride.extend(stride[2:])
     return x.as_strided(size=(x.shape[0], n, w, w, *list(x.shape[3:])),
-                            stride=new_stride,
-                            storage_offset=0)
+                        stride=new_stride,
+                        storage_offset=0)
+
 
 def stripe_version5(x, n, w=0):
     x, seq_len = x.contiguous(), x.size(2)
@@ -696,8 +682,8 @@ def stripe_version5(x, n, w=0):
     new_stride.append(stride[1])
     new_stride.extend(stride[2:])
     return x.as_strided(size=(x.shape[0], n, w, *list(x.shape[2:])),
-                            stride=new_stride,
-                            storage_offset=0)
+                        stride=new_stride,
+                        storage_offset=0)
 
 
 def stripe_parent_left(x, n, w, nt, t):
@@ -708,9 +694,10 @@ def stripe_parent_left(x, n, w, nt, t):
     new_stride.append(stride[1] + stride[2])
     new_stride.append(stride[2])
     new_stride.extend(stride[3:])
-    return x.as_strided(size=(x.shape[0], n,  w,  x.shape[3], t, nt),
-                            stride=new_stride,
-                            storage_offset=stride[2] + stride[-2]*nt)
+    return x.as_strided(size=(x.shape[0], n, w, x.shape[3], t, nt),
+                        stride=new_stride,
+                        storage_offset=stride[2] + stride[-2] * nt)
+
 
 def stripe_parent_left_add(x, y, n, w, nt, t):
     x, seq_len = x.contiguous(), x.size(2)
@@ -724,6 +711,7 @@ def stripe_parent_left_add(x, y, n, w, nt, t):
                  stride=new_stride,
                  storage_offset=stride[2] + stride[-2] * nt).add_(y)
 
+
 def stripe_headed_left(x, n, w, nt, t):
     x, seq_len = x.contiguous(), x.size(2)
     stride = list(x.stride())
@@ -732,9 +720,9 @@ def stripe_headed_left(x, n, w, nt, t):
     new_stride.append(stride[1] + stride[2])
     new_stride.append(stride[1])
     new_stride.extend(stride[3:])
-    return x.as_strided(size=(x.shape[0], n, w, x.shape[3], nt,  t),
-                            stride=new_stride,
-                            storage_offset= w * stride[2] + nt * stride[-1])
+    return x.as_strided(size=(x.shape[0], n, w, x.shape[3], nt, t),
+                        stride=new_stride,
+                        storage_offset=w * stride[2] + nt * stride[-1])
 
 
 def stripe_rules_left(x, w, start, nt):
@@ -746,8 +734,8 @@ def stripe_rules_left(x, w, start, nt):
     new_stride.append(stride[2])
     new_stride.extend(stride[3:])
     return x.as_strided(size=(x.shape[0], w, start, nt, nt, nt),
-                            stride=new_stride,
-                            storage_offset= start * stride[1])
+                        stride=new_stride,
+                        storage_offset=start * stride[1])
 
 
 def stripe_rules_right(x, w, end, nt):
@@ -758,12 +746,9 @@ def stripe_rules_right(x, w, end, nt):
     new_stride.append(stride[1])
     new_stride.append(stride[2])
     new_stride.extend(stride[3:])
-    return x.as_strided(size=(x.shape[0], w, seq_len - end , nt, nt, nt),
-                            stride=new_stride,
-                            storage_offset= end * stride[2])
-
-
-
+    return x.as_strided(size=(x.shape[0], w, seq_len - end, nt, nt, nt),
+                        stride=new_stride,
+                        storage_offset=end * stride[2])
 
 
 def stripe_headed_left_add(x, y, n, w, nt, t):
@@ -789,8 +774,9 @@ def stripe_headed_right(x, n, w, nt, t):
     new_stride.append(stride[1])
     new_stride.extend(stride[3:])
     return x.as_strided(size=(x.shape[0], n, w, x.shape[3], t, nt),
-                            stride=new_stride,
-                            storage_offset= stride[1] + nt*stride[-2])
+                        stride=new_stride,
+                        storage_offset=stride[1] + nt * stride[-2])
+
 
 def stripe_headed_right_add(x, y, n, w, nt, t):
     x, seq_len = x.contiguous(), x.size(2)
@@ -804,6 +790,7 @@ def stripe_headed_right_add(x, y, n, w, nt, t):
                  stride=new_stride,
                  storage_offset=stride[1] + nt * stride[-2]).add_(y)
 
+
 def stripe_parent_right(x, n, w, nt, t):
     x, seq_len = x.contiguous(), x.size(2)
     stride = list(x.stride())
@@ -813,8 +800,9 @@ def stripe_parent_right(x, n, w, nt, t):
     new_stride.append(stride[2])
     new_stride.extend(stride[3:])
     return x.as_strided(size=(x.shape[0], n, w, x.shape[3], nt, t),
-                            stride=new_stride,
-                            storage_offset=w*stride[1] + nt*stride[-1])
+                        stride=new_stride,
+                        storage_offset=w * stride[1] + nt * stride[-1])
+
 
 def stripe_parent_right_add(x, y, n, w, nt, t):
     x, seq_len = x.contiguous(), x.size(2)
@@ -825,8 +813,8 @@ def stripe_parent_right_add(x, y, n, w, nt, t):
     new_stride.append(stride[2])
     new_stride.extend(stride[3:])
     x.as_strided(size=(x.shape[0], n, w, x.shape[3], nt, t),
-                     stride=new_stride,
-                     storage_offset=w*stride[1] + nt*stride[-1]).add_(y)
+                 stride=new_stride,
+                 storage_offset=w * stride[1] + nt * stride[-1]).add_(y)
 
 
 # #
@@ -933,31 +921,22 @@ def stripe_parent_right_add(x, y, n, w, nt, t):
 #                             storage_offset=w*stride[1]).add_(y)
 
 
-
-
-
-
-
-
-
-
-
 def stripe_version7(x, n, w=0):
     pass
+
 
 def stripe_version6(x, n, w=0):
     x, seq_len = x.contiguous(), x.size(2)
     stride = list(x.stride())
     new_stride = []
     new_stride.append(stride[0])
-    new_stride.append(stride[1]+stride[2])
+    new_stride.append(stride[1] + stride[2])
     new_stride.append(stride[2])
     new_stride.append(stride[2])
     new_stride.extend(stride[2:])
-    return x.as_strided(size=(x.shape[0], n, w, w, w,  *list(x.shape[3:])),
-                            stride=new_stride,
-                            storage_offset=0)
-
+    return x.as_strided(size=(x.shape[0], n, w, w, w, *list(x.shape[3:])),
+                        stride=new_stride,
+                        storage_offset=0)
 
 
 def decode_stripe1(x, n, w):
@@ -965,49 +944,56 @@ def decode_stripe1(x, n, w):
     stride = list(x.stride())
     new_stride = []
     new_stride.append(stride[0])
-    new_stride.append(stride[1]+stride[2]+stride[3])
+    new_stride.append(stride[1] + stride[2] + stride[3])
     new_stride.append(stride[3])
     # new_stride.extend(stride[3:])
     return x.as_strided(size=(x.shape[0], n, w),
-                            stride=new_stride,
-                            storage_offset= (w) * (stride[2]))
+                        stride=new_stride,
+                        storage_offset=(w) * (stride[2]))
+
 
 def decode_stripe2(x, n, w):
     x, seq_len = x.contiguous(), x.size(2)
     stride = list(x.stride())
     new_stride = []
     new_stride.append(stride[0])
-    new_stride.append(stride[1]+stride[2]+stride[3])
+    new_stride.append(stride[1] + stride[2] + stride[3])
     new_stride.extend(stride[3:])
     return x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])),
-                            stride=new_stride,
-                            storage_offset= w * stride[1])
+                        stride=new_stride,
+                        storage_offset=w * stride[1])
+
 
 def stripe_logadd_outside(x, y, n, w, offset):
     x = x.contiguous()
-    stride =  list(x.stride())
+    stride = list(x.stride())
     new_stride = []
     new_stride.append(stride[0])
     new_stride.append(stride[1] + stride[2] + stride[3])
     new_stride.append(stride[3])
     new_stride.extend(stride[4:])
-    tmp = x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride, storage_offset= offset * stride[1] + (offset + w) * stride[2] + offset * stride[3] )
-    x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride, storage_offset= offset * stride[1] + (offset + w) * stride[2] + offset * stride[3])\
+    tmp = x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride,
+                       storage_offset=offset * stride[1] + (offset + w) * stride[2] + offset * stride[3])
+    x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride,
+                 storage_offset=offset * stride[1] + (offset + w) * stride[2] + offset * stride[3]) \
         .copy_(torch.logaddexp(tmp, y))
+
 
 def stripe_add_outside(x, y, n, w, offset):
     x = x.contiguous()
-    stride =  list(x.stride())
+    stride = list(x.stride())
     new_stride = []
     new_stride.append(stride[0])
     new_stride.append(stride[1] + stride[2] + stride[3])
     new_stride.append(stride[3])
     new_stride.extend(stride[4:])
     # tmp = x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride, storage_offset= offset * stride[1] + (offset + w) * stride[2] + offset * stride[3] )
-    x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride, storage_offset= offset * stride[1] + (offset + w) * stride[2] + offset * stride[3])\
+    x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride,
+                 storage_offset=offset * stride[1] + (offset + w) * stride[2] + offset * stride[3]) \
         .add_(y)
 
-def stripe_need_dad_add(x, y,  n, w, start, end, headstart):
+
+def stripe_need_dad_add(x, y, n, w, start, end, headstart):
     x = x.contiguous()
     stride = list(x.stride())
     new_stride = []
@@ -1016,8 +1002,7 @@ def stripe_need_dad_add(x, y,  n, w, start, end, headstart):
     new_stride.append(stride[3])
     new_stride.extend(stride[4:])
     x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride,
-                       storage_offset= start * stride[1] + (end) * stride[2] + headstart * stride[3]).add_(y)
-
+                 storage_offset=start * stride[1] + (end) * stride[2] + headstart * stride[3]).add_(y)
 
 
 def stripe_need_dad(x, n, w, start, end, headstart):
@@ -1029,8 +1014,7 @@ def stripe_need_dad(x, n, w, start, end, headstart):
     new_stride.append(stride[3])
     new_stride.extend(stride[4:])
     return x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride,
-                       storage_offset= start * stride[1] + (end) * stride[2] + headstart * stride[3])
-
+                        storage_offset=start * stride[1] + (end) * stride[2] + headstart * stride[3])
 
 
 def stripe_add_outside_v2(x, y, n, w, start, end, headstart):
@@ -1047,6 +1031,7 @@ def stripe_add_outside_v2(x, y, n, w, start, end, headstart):
                  storage_offset=start * stride[1] + (end) * stride[2] + headstart * stride[3]) \
         .add_(y)
 
+
 def stripe_add_outside_left(x, y, n, w, start, end, headstart):
     x = x.contiguous()
     stride = list(x.stride())
@@ -1055,9 +1040,10 @@ def stripe_add_outside_left(x, y, n, w, start, end, headstart):
     new_stride.append(stride[1] + stride[2])
     new_stride.append(stride[3])
     new_stride.extend(stride[4:])
-    x.as_strided(size=(x.shape[0], n, w-1, *list(x.shape[4:])), stride=new_stride,
+    x.as_strided(size=(x.shape[0], n, w - 1, *list(x.shape[4:])), stride=new_stride,
                  storage_offset=start * stride[1] + (end) * stride[2] + headstart * stride[3]) \
         .add_(y)
+
 
 def stripe_add_outside_right(x, y, n, w, start, end, headstart):
     x = x.contiguous()
@@ -1067,11 +1053,9 @@ def stripe_add_outside_right(x, y, n, w, start, end, headstart):
     new_stride.append(stride[1] + stride[2])
     new_stride.append(stride[3])
     new_stride.extend(stride[4:])
-    x.as_strided(size=(x.shape[0], n, w-1, *list(x.shape[4:])), stride=new_stride,
+    x.as_strided(size=(x.shape[0], n, w - 1, *list(x.shape[4:])), stride=new_stride,
                  storage_offset=start * stride[1] + (end) * stride[2] + headstart * stride[3]) \
         .add_(y)
-
-
 
 
 def stripe_logadd_outside_v2(x, y, n, w, start, end, headstart):
@@ -1083,7 +1067,7 @@ def stripe_logadd_outside_v2(x, y, n, w, start, end, headstart):
     new_stride.append(stride[3])
     new_stride.extend(stride[4:])
     tmp = x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride,
-                       storage_offset= start * stride[1] + (end) * stride[2] + headstart * stride[3])
+                       storage_offset=start * stride[1] + (end) * stride[2] + headstart * stride[3])
     # print(tmp.shape)
     # print(y.shape)
     x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride,
@@ -1109,13 +1093,14 @@ def stripe(x, n, w, offset=(0, 0), dim=1):
 
 def stripe_outside(x, y, n, w, offset):
     x = x.contiguous()
-    stride =  list(x.stride())
+    stride = list(x.stride())
     new_stride = []
     new_stride.append(stride[0])
     new_stride.append(stride[1] + stride[2] + stride[3])
     new_stride.append(stride[3])
     new_stride.extend(stride[4:])
-    tmp = x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride, storage_offset= offset * stride[1] + (offset + w) * stride[2] + offset * stride[3] )
+    tmp = x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])), stride=new_stride,
+                       storage_offset=offset * stride[1] + (offset + w) * stride[2] + offset * stride[3])
     return tmp
 
 
@@ -1124,16 +1109,16 @@ def stripe_copy_gradient_left(x, y, n, left, right):
     stride = list(x.stride())
     newstride = []
     newstride.append(stride[0])
-    newstride.append(stride[1]+stride[2])
+    newstride.append(stride[1] + stride[2])
     # newstride.append(stride[1]+stride[2])
     newstride.append(stride[2])
     newstride.extend(stride[2:])
     tmp = x.as_strided(size=(x.shape[0], n, right, left, *x.shape[3:]), stride=newstride,
-                      storage_offset=left*stride[2])
+                       storage_offset=left * stride[2])
     print(tmp.shape)
     print(y.shape)
     x.as_strided(size=(x.shape[0], n, right, left, *x.shape[3:]), stride=newstride,
-                storage_offset=right * stride[1]).copy_(torch.logaddexp(tmp, y))
+                 storage_offset=right * stride[1]).copy_(torch.logaddexp(tmp, y))
 
 
 def stripe_copy_gradient_right(x, y, n, left, right):
@@ -1141,17 +1126,16 @@ def stripe_copy_gradient_right(x, y, n, left, right):
     stride = list(x.stride())
     newstride = []
     newstride.append(stride[0])
-    newstride.append(stride[1]+stride[2])
+    newstride.append(stride[1] + stride[2])
     # newstride.append(stride[1]+stride[2])
     newstride.append(stride[2])
     newstride.extend(stride[2:])
     tmp = x.as_strided(size=(x.shape[0], n, left, right, *x.shape[3:]), stride=newstride,
-                      storage_offset=left*stride[2])
+                       storage_offset=left * stride[2])
     # print(tmp.shape)
     # print(y.shape)
     x.as_strided(size=(x.shape[0], n, left, right, *x.shape[3:]), stride=newstride,
-                storage_offset= right * stride[2]).copy_(torch.logaddexp(tmp, y))
-
+                 storage_offset=right * stride[2]).copy_(torch.logaddexp(tmp, y))
 
 
 # used in lexicalized-pcfg.
@@ -1161,9 +1145,10 @@ def stripe_version2(x, n, w, offset=(0, 0), dim=1):
     numel = stride[2]
     stride[1] = (seq_len + 1) * numel + stride[3]
     stride[2] = (1 if dim == 1 else seq_len) * numel
-    return x.as_strided(size=(x.shape[0], n, w, w+1, *list(x.shape[4:])),
-                            stride=stride,
-                            storage_offset=(offset[0] * seq_len + offset[1]) * numel)
+    return x.as_strided(size=(x.shape[0], n, w, w + 1, *list(x.shape[4:])),
+                        stride=stride,
+                        storage_offset=(offset[0] * seq_len + offset[1]) * numel)
+
 
 def stripe_version2_add(x, y, n, w, offset=(0, 0), dim=1):
     x, seq_len = x.contiguous(), x.size(2)
@@ -1172,9 +1157,9 @@ def stripe_version2_add(x, y, n, w, offset=(0, 0), dim=1):
     stride[1] = (seq_len + 1) * numel + stride[3]
     stride[2] = (1 if dim == 1 else seq_len) * numel
 
-    x.as_strided(size=(x.shape[0], n, w, w+1, *list(x.shape[4:])),
-                            stride=stride,
-                            storage_offset=(offset[0] * seq_len + offset[1]) * numel).add_(y)
+    x.as_strided(size=(x.shape[0], n, w, w + 1, *list(x.shape[4:])),
+                 stride=stride,
+                 storage_offset=(offset[0] * seq_len + offset[1]) * numel).add_(y)
 
 
 def stripe_version2_left(x, n, w):
@@ -1184,9 +1169,10 @@ def stripe_version2_left(x, n, w):
     new_stride = list(x.stride())
     new_stride[1] = stride[1] + stride[2] + stride[3]
     new_stride[2] = stride[1]
-    return x.as_strided(size=(x.shape[0], n-1, w, w, *list(x.shape[4:])),
-                            stride=new_stride,
-                            storage_offset= stride[1] +  (w+1) * stride[2] + stride[3])
+    return x.as_strided(size=(x.shape[0], n - 1, w, w, *list(x.shape[4:])),
+                        stride=new_stride,
+                        storage_offset=stride[1] + (w + 1) * stride[2] + stride[3])
+
 
 # s_need_dad, n, w,
 def stripe_copy_left(x, y, n, w):
@@ -1198,9 +1184,10 @@ def stripe_copy_left(x, y, n, w):
     new_stride.append(stride[1] + stride[2] + stride[3])
     new_stride.append(stride[1])
     new_stride.extend(x.shape[4:])
-    x.as_strided(size=(x.shape[0], n-1, w, *list(x.shape[4:])),
-                            stride=new_stride,
-                            storage_offset= stride[1] +  (w+1) * stride[2] + stride[3]).copy_(y)
+    x.as_strided(size=(x.shape[0], n - 1, w, *list(x.shape[4:])),
+                 stride=new_stride,
+                 storage_offset=stride[1] + (w + 1) * stride[2] + stride[3]).copy_(y)
+
 
 def stripe_version2_right(x, n, w):
     x = x.contiguous()
@@ -1209,9 +1196,10 @@ def stripe_version2_right(x, n, w):
     new_stride = list(x.stride())
     new_stride[1] = stride[1] + stride[2] + stride[3]
     new_stride[2] = stride[2]
-    return x.as_strided(size=(x.shape[0], n-1, w, w, *list(x.shape[4:])),
-                            stride=new_stride,
-                            storage_offset=   stride[2])
+    return x.as_strided(size=(x.shape[0], n - 1, w, w, *list(x.shape[4:])),
+                        stride=new_stride,
+                        storage_offset=stride[2])
+
 
 def stripe_copy_right(x, y, n, w):
     x = x.contiguous()
@@ -1222,9 +1210,9 @@ def stripe_copy_right(x, y, n, w):
     new_stride.append(stride[1] + stride[2] + stride[3])
     new_stride.append(stride[1])
     new_stride.extend(x.shape[4:])
-    x.as_strided(size=(x.shape[0], n-1, w,  *list(x.shape[4:])),
-                            stride=new_stride,
-                            storage_offset= stride[2]).copy_(y)
+    x.as_strided(size=(x.shape[0], n - 1, w, *list(x.shape[4:])),
+                 stride=new_stride,
+                 storage_offset=stride[2]).copy_(y)
 
 
 def stripe_version_nt_nt(x, n, w, offset=(0, 0), dim=1):
@@ -1235,11 +1223,11 @@ def stripe_version_nt_nt(x, n, w, offset=(0, 0), dim=1):
     stride[1] = (seq_len + 1) * numel + stride[3]
     stride[2] = (1 if dim == 1 else seq_len) * numel
     origin_stride = x.stride()
-    return x.as_strided(size=(x.shape[0], n, w-2, w-1, *list(x.shape[4:])),
-                            stride=stride,
-                            storage_offset=(offset[0] * seq_len + offset[1]) * numel + \
-                                          2 * (1-dim)*(origin_stride[3])
-                                           + (1 - dim) * origin_stride[1] +  dim * origin_stride[2])
+    return x.as_strided(size=(x.shape[0], n, w - 2, w - 1, *list(x.shape[4:])),
+                        stride=stride,
+                        storage_offset=(offset[0] * seq_len + offset[1]) * numel + \
+                                       2 * (1 - dim) * (origin_stride[3])
+                                       + (1 - dim) * origin_stride[1] + dim * origin_stride[2])
 
 
 def stripe_version_nt_t(x, n, w):
@@ -1248,28 +1236,23 @@ def stripe_version_nt_t(x, n, w):
     numel = stride[2]
     new_stride = []
     new_stride.append(stride[0])
-    new_stride.append(stride[1]+stride[2]+stride[3])
+    new_stride.append(stride[1] + stride[2] + stride[3])
     new_stride.extend(stride[3:])
     return x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])),
-                            stride=new_stride,
-                            storage_offset=  w * numel)
+                        stride=new_stride,
+                        storage_offset=w * numel)
+
 
 def stripe_version_t_nt(x, n, w):
     x, seq_len = x.contiguous(), x.size(2)
     stride = list(x.stride())
     new_stride = []
     new_stride.append(stride[0])
-    new_stride.append(stride[1]+stride[2]+stride[3])
+    new_stride.append(stride[1] + stride[2] + stride[3])
     new_stride.extend(stride[3:])
     return x.as_strided(size=(x.shape[0], n, w, *list(x.shape[4:])),
-                            stride=new_stride,
-                            storage_offset= stride[1] + (w+1) * stride[2] + stride[3])
-
-
-
-
-
-
+                        stride=new_stride,
+                        storage_offset=stride[1] + (w + 1) * stride[2] + stride[3])
 
 
 # used in lexicalized-pcfg.
@@ -1279,9 +1262,10 @@ def stripe_version4(x, n, w, offset=(0, 0), dim=1):
     numel = stride[2]
     stride[1] = (seq_len + 1) * numel + stride[3] + stride[4]
     stride[2] = (1 if dim == 1 else seq_len) * numel
-    return x.as_strided(size=(x.shape[0], n, w, w+1, w+1, *list(x.shape[5:])),
-                            stride=stride,
-                            storage_offset=(offset[0] * seq_len + offset[1]) * numel)
+    return x.as_strided(size=(x.shape[0], n, w, w + 1, w + 1, *list(x.shape[5:])),
+                        stride=stride,
+                        storage_offset=(offset[0] * seq_len + offset[1]) * numel)
+
 
 # used for arc_indictor; calculating the marginal arc probabilities.
 def stripe_arc_indicator(x, n, w):
@@ -1290,16 +1274,15 @@ def stripe_arc_indicator(x, n, w):
     numel = stride[2]
     new_stride = []
     new_stride.append(stride[0])
-    new_stride.append(stride[1]+stride[2])
+    new_stride.append(stride[1] + stride[2])
     new_stride.append(stride[1])
     new_stride.append(stride[2])
     return x.as_strided(size=(x.shape[0], n, w, w),
-                            stride=new_stride,
-                            storage_offset=0)
+                        stride=new_stride,
+                        storage_offset=0)
 
 
-
-#for lexicalized_pcfg.
+# for lexicalized_pcfg.
 def diagonal_copy_v2(x, y, w):
     x, seq_len = x.contiguous(), x.size(1)
     stride, numel = list(x.stride()), x[:, 0, 0].numel()
@@ -1311,13 +1294,14 @@ def diagonal_copy_v2(x, y, w):
         new_stride.extend(stride[4:])
         x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[4:])),
                      stride=new_stride,
-                     storage_offset= w * stride[2]
+                     storage_offset=w * stride[2]
                      ).copy_(y)
     else:
         x.as_strided(size=(x.shape[0], seq_len - w, w),
                      stride=new_stride,
-                     storage_offset= w * stride[2]
+                     storage_offset=w * stride[2]
                      ).copy_(y)
+
 
 def diagonal_copy_v2_add(x, y, w):
     x, seq_len = x.contiguous(), x.size(1)
@@ -1330,17 +1314,17 @@ def diagonal_copy_v2_add(x, y, w):
         new_stride.extend(stride[4:])
         x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[4:])),
                      stride=new_stride,
-                     storage_offset= w * stride[2]
+                     storage_offset=w * stride[2]
                      ).add_(y)
     else:
         new_stride.append(stride[3])
         x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[3:])),
                      stride=new_stride,
-                     storage_offset= w * stride[2]
+                     storage_offset=w * stride[2]
                      ).add_(y)
 
 
-def diagonal2(x,  w):
+def diagonal2(x, w):
     x, seq_len = x.contiguous(), x.size(1)
     stride, numel = list(x.stride()), x[:, 0, 0].numel()
     new_stride = []
@@ -1350,18 +1334,18 @@ def diagonal2(x,  w):
     if len(x.shape) > 4:
         new_stride.extend(stride[4:])
         return x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[4:])),
-                     stride=new_stride,
-                     storage_offset= w * stride[2]
-                     )
+                            stride=new_stride,
+                            storage_offset=w * stride[2]
+                            )
     else:
         new_stride.append(stride[3])
         return x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[3:])),
-                     stride=new_stride,
-                     storage_offset= w * stride[2]
-                     )
+                            stride=new_stride,
+                            storage_offset=w * stride[2]
+                            )
 
 
-#for lexicalized_pcfg.
+# for lexicalized_pcfg.
 def diagonal_copy_logadd_v2(x, y, w):
     x, seq_len = x.contiguous(), x.size(1)
     stride, numel = list(x.stride()), x[:, 0, 0].numel()
@@ -1372,9 +1356,9 @@ def diagonal_copy_logadd_v2(x, y, w):
     if len(x.shape) > 4:
         new_stride.extend(stride[4:])
         tmp = x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[4:])),
-                     stride=new_stride,
-                     storage_offset= w * stride[2]
-                     )
+                           stride=new_stride,
+                           storage_offset=w * stride[2]
+                           )
         x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[4:])),
                      stride=new_stride,
                      storage_offset=w * stride[2]
@@ -1385,7 +1369,7 @@ def diagonal_copy_logadd_v2(x, y, w):
         new_stride.append(stride[3])
         x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[3:])),
                      stride=new_stride,
-                     storage_offset= w * stride[2]
+                     storage_offset=w * stride[2]
                      ).copy_(y)
 
 
@@ -1399,21 +1383,17 @@ def diagonal_v2(x, w):
     if len(x.shape) > 4:
         new_stride.extend(stride[4:])
         return x.as_strided(size=(x.shape[0], seq_len - w, w, *list(x.shape[4:])),
-                     stride=new_stride,
-                     storage_offset= w * stride[2]
-                     )
+                            stride=new_stride,
+                            storage_offset=w * stride[2]
+                            )
     else:
         raise NotImplementedError
-
-
 
 
 # def stripe()
 
 
-
-
-def diagonal_copy_v4(x, y, nth_diagonal, total_num,  width, start_offset=0, head_offset=0, head_moving=0):
+def diagonal_copy_v4(x, y, nth_diagonal, total_num, width, start_offset=0, head_offset=0, head_moving=0):
     x, seq_len = x.contiguous(), x.size(1)
     stride, numel = list(x.stride()), x[:, 0, 0].numel()
     new_stride = []
@@ -1424,15 +1404,17 @@ def diagonal_copy_v4(x, y, nth_diagonal, total_num,  width, start_offset=0, head
     size = (x.shape[0], total_num, width, *list(y.shape[3:]))
     x.as_strided(size=size,
                  stride=new_stride,
-                 storage_offset= start_offset * stride[1] + (start_offset + nth_diagonal) * (stride[2])   + (head_offset) * stride[4]
+                 storage_offset=start_offset * stride[1] + (start_offset + nth_diagonal) * (stride[2]) + (head_offset) *
+                                stride[4]
                  ).copy_(y)
 
-def diagonal_copy_v3(x, y, nth_diagonal, total_num,  width, start_offset=0, head_offset=0, head_moving=1):
+
+def diagonal_copy_v3(x, y, nth_diagonal, total_num, width, start_offset=0, head_offset=0, head_moving=1):
     x, seq_len = x.contiguous(), x.size(1)
     stride, numel = list(x.stride()), x[:, 0, 0].numel()
     new_stride = []
     new_stride.append(stride[0])
-    new_stride.append(stride[1] + stride[2] + head_moving*stride[3])
+    new_stride.append(stride[1] + stride[2] + head_moving * stride[3])
     new_stride.append(stride[3])
 
     if len(x.shape) > 4:
@@ -1440,10 +1422,12 @@ def diagonal_copy_v3(x, y, nth_diagonal, total_num,  width, start_offset=0, head
         size = (x.shape[0], total_num, width, *list(x.shape[4:]))
         x.as_strided(size=size,
                      stride=new_stride,
-                     storage_offset= start_offset * stride[1] + (start_offset + nth_diagonal) * stride[2] + (head_offset) * stride[3]
+                     storage_offset=start_offset * stride[1] + (start_offset + nth_diagonal) * stride[2] + (
+                         head_offset) * stride[3]
                      ).copy_(y)
     else:
         raise NotImplemented
+
 
 def diagonal_copy_(x, y, w):
     # size of x: (batch, N, N, nt)
@@ -1456,17 +1440,15 @@ def diagonal_copy_(x, y, w):
     new_stride.append(stride[1] + stride[2])
     if len(x.shape) > 3:
         new_stride.extend(stride[3:])
-        x.as_strided(size=(x.shape[0], seq_len - w,  *list(x.shape[3:])),
+        x.as_strided(size=(x.shape[0], seq_len - w, *list(x.shape[3:])),
                      stride=new_stride,
-                     storage_offset= w * stride[2]
+                     storage_offset=w * stride[2]
                      ).copy_(y)
     else:
         x.as_strided(size=(x.shape[0], seq_len - w),
                      stride=new_stride,
                      storage_offset=w * stride[2]
                      ).copy_(y)
-
-
 
 
 def diagonal(x, w):
@@ -1486,12 +1468,3 @@ def diagonal(x, w):
                             stride=new_stride,
                             storage_offset=w * stride[2]
                             )
-
-
-
-
-
-
-
-
-
