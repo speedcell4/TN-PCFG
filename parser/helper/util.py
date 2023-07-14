@@ -17,38 +17,36 @@ def get_model(args, dataset):
     if args.model_name == 'NPCFG':
         return NeuralPCFG(args, dataset).to(dataset.device)
 
-    elif args.model_name == 'CPCFG':
+    if args.model_name == 'CPCFG':
         return CompoundPCFG(args, dataset).to(dataset.device)
 
-    elif args.model_name == 'TNPCFG':
+    if args.model_name == 'TNPCFG':
         return TNPCFG(args, dataset).to(dataset.device)
 
-
-    elif args.model_name == 'NLPCFG':
+    if args.model_name == 'NLPCFG':
         return NeuralLPCFG(args, dataset).to(dataset.device)
 
-    elif args.model_name == 'NBLPCFG':
+    if args.model_name == 'NBLPCFG':
         return NeuralBLPCFG(args, dataset).to(dataset.device)
 
-    elif args.model_name == 'FastTNPCFG':
+    if args.model_name == 'FastTNPCFG':
         return FastTNPCFG(args, dataset).to(dataset.device)
 
-    elif args.model_name == 'FastNBLPCFG':
+    if args.model_name == 'FastNBLPCFG':
         return FastNBLPCFG(args, dataset).to(dataset.device)
 
-
-    else:
-        raise KeyError
+    raise KeyError
 
 
 def get_optimizer(args, model):
     if args.name == 'adam':
         return torch.optim.Adam(params=model.parameters(), lr=args.lr, betas=(args.mu, args.nu))
-    elif args.name == 'adamw':
+
+    if args.name == 'adamw':
         return torch.optim.AdamW(params=model.parameters(), lr=args.lr, betas=(args.mu, args.nu),
                                  weight_decay=args.weight_decay)
-    else:
-        raise NotImplementedError
+
+    raise NotImplementedError
 
 
 def get_logger(args, log_name='train', path=None):
@@ -72,8 +70,7 @@ def get_logger(args, log_name='train', path=None):
 
 def create_save_path(args):
     model_name = args.model.model_name
-    suffix = "/{}".format(model_name) + time.strftime("%Y-%m-%d-%H_%M_%S",
-                                                      time.localtime(time.time()))
+    suffix = f"/{model_name}" + time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time()))
     from pathlib import Path
     saved_name = Path(args.save_dir).stem + suffix
     args.save_dir = args.save_dir + suffix
@@ -81,7 +78,7 @@ def create_save_path(args):
     if os.path.exists(args.save_dir):
         print(f'Warning: the folder {args.save_dir} exists.')
     else:
-        print('Creating {}'.format(args.save_dir))
+        print(f'Creating {args.save_dir}')
         os.makedirs(args.save_dir)
     # save the config file and model file.
     import shutil

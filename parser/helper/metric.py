@@ -135,8 +135,8 @@ class UAS(Metric):
                 self.total += 1.
 
     def __repr__(self):
-        return "UDAS: {}, UUAS:{}, root:{} ".format(self.score, self.undirect_correct / self.total,
-                                                    self.correct_root / self.total_sentence)
+        return f'UDAS: {self.score}, UUAS:{self.undirect_correct / self.total}, ' \
+               f'root:{self.correct_root / self.total_sentence} '
 
 
 class LossMetric(Metric):
@@ -158,8 +158,8 @@ class LossMetric(Metric):
         return self.total_likelihood / self.total
 
     def __repr__(self):
-        return "avg likelihood: {} kl: {}, total likelihood:{}, n:{}".format(self.avg_likelihood, self.avg_kl,
-                                                                             self.total_likelihood, self.total)
+        return f"avg likelihood: {self.avg_likelihood} kl: {self.avg_kl}, " \
+               f"total likelihood:{self.total_likelihood}, n:{self.total}"
 
     @property
     def score(self):
@@ -193,4 +193,4 @@ class LikelihoodMetric(Metric):
         return (-self.total_likelihood / self.total_word).exp()
 
     def __repr__(self):
-        return "avg likelihood: {}, perp. :{}".format(self.avg_likelihood, self.perplexity)
+        return f"avg likelihood: {self.avg_likelihood}, perp. :{self.perplexity}"

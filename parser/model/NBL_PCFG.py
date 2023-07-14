@@ -38,14 +38,16 @@ class NeuralBLPCFG(nn.Module):
         self.r_emb2 = nn.Parameter(torch.randn(self.r, self.s_dim))
         self.r_emb3 = nn.Parameter(torch.randn(self.r, self.s_dim))
 
-        self.beta_mlp = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      nn.Linear(self.s_dim, self.V)
-                                      )
+        self.beta_mlp = nn.Sequential(
+            nn.Linear(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.V)
+        )
 
         self.noninherent_mlp = nn.Sequential(
-            nn.Linear(self.s_dim, self.NT_T * 2))
+            nn.Linear(self.s_dim, self.NT_T * 2),
+        )
 
         self.inherent_mlp = nn.Sequential(nn.Linear(self.s_dim, self.NT_T))
 
@@ -60,16 +62,19 @@ class NeuralBLPCFG(nn.Module):
             nn.Linear(self.s_dim, self.s_dim),
             ResLayer(self.s_dim, self.s_dim),
             ResLayer(self.s_dim, self.s_dim),
-            nn.Linear(self.s_dim, self.NT))
+            nn.Linear(self.s_dim, self.NT),
+        )
 
-        self.root_mlp2 = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
-                                       ResLayer(self.s_dim, self.s_dim),
-                                       ResLayer(self.s_dim, self.s_dim),
-                                       nn.Linear(self.s_dim, self.V))
+        self.root_mlp2 = nn.Sequential(
+            nn.Linear(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.V),
+        )
 
-        self._initialize()
+        self.reset_parameters()
 
-    def _initialize(self):
+    def reset_parameters(self):
         for p in self.parameters():
             if p.dim() > 1:
                 torch.nn.init.xavier_uniform_(p)

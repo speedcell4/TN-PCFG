@@ -35,10 +35,11 @@ class NeuralPCFG(nn.Module):
         self.NT_T = self.NT + self.T
         self.rule_mlp = nn.Linear(self.s_dim, (self.NT_T) ** 2)
 
-        # I find this is important for neural/compound PCFG. if do not use this initialization, the performance would get much worser.
-        self._initialize()
+        # I find this is important for neural/compound PCFG.
+        # if do not use this initialization, the performance would get much worser.
+        self.reset_parameters()
 
-    def _initialize(self):
+    def reset_parameters(self):
         for p in self.parameters():
             if p.dim() > 1:
                 torch.nn.init.xavier_uniform_(p)
@@ -63,10 +64,12 @@ class NeuralPCFG(nn.Module):
 
         root, unary, rule = roots(), terms(), rules()
 
-        return {'unary': unary,
-                'root': root,
-                'rule': rule,
-                'kl': torch.tensor(0, device=self.device)}
+        return {
+            'unary': unary,
+            'root': root,
+            'rule': rule,
+            'kl': torch.tensor(0, device=self.device),
+        }
 
     def loss(self, input):
         rules = self.forward(input)

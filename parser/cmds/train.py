@@ -75,5 +75,5 @@ class Train(CMD):
                 log.info(f"{t}s elapsed\n")
 
             total_time += t
-            if train_arg.patience > 0 and epoch - best_e >= train_arg.patience:
+            if 0 < train_arg.patience <= epoch - best_e:
                 break

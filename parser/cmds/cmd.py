@@ -33,7 +33,7 @@ class CMD(object):
 
     @torch.no_grad()
     def evaluate(self, loader, eval_dep=False, decode_type='mbr', model=None):
-        if model == None:
+        if model is None:
             model = self.model
         model.eval()
         metric_f1 = UF1()

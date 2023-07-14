@@ -23,34 +23,41 @@ class CompoundPCFG(nn.Module):
         self.w_dim = args.w_dim
         self.h_dim = args.h_dim
 
-        self.term_emb = nn.Parameter(torch.randn(self.T, self.s_dim))
-        self.nonterm_emb = nn.Parameter(torch.randn(self.NT, self.s_dim))
-        self.root_emb = nn.Parameter(torch.randn(1, self.s_dim))
+        self.term_emb = nn.Parameter(torch.empty(self.T, self.s_dim))
+        self.nonterm_emb = nn.Parameter(torch.empty(self.NT, self.s_dim))
+        self.root_emb = nn.Parameter(torch.empty(1, self.s_dim))
 
         input_dim = self.s_dim + self.z_dim
 
-        self.term_mlp = nn.Sequential(nn.Linear(input_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      nn.Linear(self.s_dim, self.V))
+        self.term_mlp = nn.Sequential(
+            nn.Linear(input_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.V),
+        )
 
-        self.root_mlp = nn.Sequential(nn.Linear(input_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      nn.Linear(self.s_dim, self.NT))
+        self.root_mlp = nn.Sequential(
+            nn.Linear(input_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.NT),
+        )
 
         self.enc_emb = nn.Embedding(self.V, self.w_dim)
 
-        self.enc_rnn = nn.LSTM(self.w_dim, self.h_dim, bidirectional=True, num_layers=1, batch_first=True)
+        self.enc_rnn = nn.LSTM(
+            self.w_dim, self.h_dim, bidirectional=True,
+            num_layers=1, batch_first=True,
+        )
 
         self.enc_out = nn.Linear(self.h_dim * 2, self.z_dim * 2)
 
         self.NT_T = self.NT + self.T
-        self.rule_mlp = nn.Linear(input_dim, (self.NT_T) ** 2)
+        self.rule_mlp = nn.Linear(input_dim, self.NT_T ** 2)
 
-        self._initialize()
+        self.reset_parameters()
 
-    def _initialize(self):
+    def reset_parameters(self):
         for p in self.parameters():
             if p.dim() > 1:
                 torch.nn.init.xavier_uniform_(p)
@@ -61,9 +68,9 @@ class CompoundPCFG(nn.Module):
         seq_len = input['seq_len']
 
         def enc(x):
-            x_embbed = self.enc_emb(x)
+            x_embed = self.enc_emb(x)
             x_packed = pack_padded_sequence(
-                x_embbed, seq_len, batch_first=True, enforce_sorted=False
+                x_embed, seq_len, batch_first=True, enforce_sorted=False
             )
             h_packed, _ = self.enc_rnn(x_packed)
             padding_value = float("-inf")
@@ -116,10 +123,12 @@ class CompoundPCFG(nn.Module):
 
         root, unary, rule = roots(), terms(), rules()
 
-        return {'unary': unary,
-                'root': root,
-                'rule': rule,
-                'kl': kl(mean, lvar).sum(1)}
+        return {
+            'unary': unary,
+            'root': root,
+            'rule': rule,
+            'kl': kl(mean, lvar).sum(1),
+        }
 
     def loss(self, input):
         rules = self.forward(input)

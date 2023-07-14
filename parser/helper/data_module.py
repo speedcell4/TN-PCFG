@@ -55,6 +55,7 @@ class DataModule():
 
         def clean_word(words):
             import re
+
             def clean_number(w):
                 new_w = re.sub('[0-9]{1,}([,.]?[0-9]*)*', 'N', w)
                 return new_w

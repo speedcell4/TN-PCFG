@@ -22,17 +22,21 @@ class TNPCFG(nn.Module):
 
         ## root
         self.root_emb = nn.Parameter(torch.randn(1, self.s_dim))
-        self.root_mlp = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      nn.Linear(self.s_dim, self.NT))
+        self.root_mlp = nn.Sequential(
+            nn.Linear(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.NT),
+        )
 
         # terms
         self.term_emb = nn.Parameter(torch.randn(self.T, self.s_dim))
-        self.term_mlp = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      nn.Linear(self.s_dim, self.V))
+        self.term_mlp = nn.Sequential(
+            nn.Linear(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.V),
+        )
 
         self.rule_state_emb = nn.Parameter(torch.randn(self.NT + self.T, self.s_dim))
         rule_dim = self.s_dim
@@ -61,16 +65,18 @@ class TNPCFG(nn.Module):
             head = head.unsqueeze(0).expand(b, *head.shape)
             left = left.unsqueeze(0).expand(b, *left.shape)
             right = right.unsqueeze(0).expand(b, *right.shape)
-            return (head, left, right)
+            return head, left, right
 
         root, unary, (head, left, right) = roots(), terms(), rules()
 
-        return {'unary': unary,
-                'root': root,
-                'head': head,
-                'left': left,
-                'right': right,
-                'kl': 0}
+        return {
+            'unary': unary,
+            'root': root,
+            'head': head,
+            'left': left,
+            'right': right,
+            'kl': 0,
+        }
 
     def loss(self, input):
         rules = self.forward(input)
@@ -105,20 +111,23 @@ class FastTNPCFG(nn.Module):
         self.r = args.r_dim
         self.word_emb_size = args.word_emb_size
 
-        ## root
+        # root
         self.root_emb = nn.Parameter(torch.randn(1, self.s_dim))
-        self.root_mlp = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      # )
-                                      nn.Linear(self.s_dim, self.NT))
+        self.root_mlp = nn.Sequential(
+            nn.Linear(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.NT),
+        )
 
         # terms
         # self.term_emb = nn.Parameter(torch.randn(self.T, self.s_dim))
-        self.term_mlp = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      nn.Linear(self.s_dim, self.V))
+        self.term_mlp = nn.Sequential(
+            nn.Linear(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.V),
+        )
 
         self.rule_state_emb = nn.Parameter(torch.randn(self.NT + self.T, self.s_dim))
         rule_dim = self.s_dim
@@ -128,9 +137,9 @@ class FastTNPCFG(nn.Module):
 
         self.rank_proj = nn.Parameter(torch.randn(rule_dim, self.r))
 
-        self._initialize()
+        self.reset_parameters()
 
-    def _initialize(self):
+    def reset_parameters(self):
         for p in self.parameters():
             if p.dim() > 1:
                 torch.nn.init.xavier_normal_(p)
@@ -167,16 +176,18 @@ class FastTNPCFG(nn.Module):
             head = head.unsqueeze(0).expand(b, *head.shape)
             left = left.unsqueeze(0).expand(b, *left.shape)
             right = right.unsqueeze(0).expand(b, *right.shape)
-            return (head, left, right)
+            return head, left, right
 
         root, unary, (head, left, right) = roots(), terms(), rules()
 
-        return {'unary': unary,
-                'root': root,
-                'head': head,
-                'left': left,
-                'right': right,
-                'kl': 0}
+        return {
+            'unary': unary,
+            'root': root,
+            'head': head,
+            'left': left,
+            'right': right,
+            'kl': 0,
+        }
 
     def loss(self, input):
         rules = self.forward(input)
@@ -188,7 +199,6 @@ class FastTNPCFG(nn.Module):
         rules = self.forward(input)
         if decode_type == 'viterbi':
             assert NotImplementedError
-
         elif decode_type == 'mbr':
             return self.pcfg.decode(rules=rules, lens=input['seq_len'], viterbi=False, mbr=True)
         else:

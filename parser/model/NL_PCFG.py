@@ -34,27 +34,33 @@ class NeuralLPCFG(nn.Module):
         self.root_emb = nn.Parameter(torch.randn(1, self.s_dim))
         self.word_emb = nn.Embedding(self.V, self.s_dim)
 
-        self.head_mlp = nn.Sequential(nn.Linear(self.s_dim + self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      nn.Linear(self.s_dim, 2 * self.NT_T))
+        self.head_mlp = nn.Sequential(
+            nn.Linear(self.s_dim + self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, 2 * self.NT_T),
+        )
 
-        self.left_rule_mlp = nn.Linear(self.s_dim + self.s_dim, (self.NT_T) ** 2)
-        self.right_rule_mlp = nn.Linear(self.s_dim + self.s_dim, (self.NT_T) ** 2)
+        self.left_rule_mlp = nn.Linear(self.s_dim + self.s_dim, self.NT_T ** 2)
+        self.right_rule_mlp = nn.Linear(self.s_dim + self.s_dim, self.NT_T ** 2)
 
         # root rule.
-        self.root_mlp = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      nn.Linear(self.s_dim, self.NT))
+        self.root_mlp = nn.Sequential(
+            nn.Linear(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.NT),
+        )
 
         # unary rule
-        self.term_mlp = nn.Sequential(nn.Linear(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      ResLayer(self.s_dim, self.s_dim),
-                                      nn.Linear(self.s_dim, self.V))
-        self._initialize()
+        self.term_mlp = nn.Sequential(
+            nn.Linear(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            ResLayer(self.s_dim, self.s_dim),
+            nn.Linear(self.s_dim, self.V),
+        )
+        self.reset_parameters()
 
-    def _initialize(self):
+    def reset_parameters(self):
         for p in self.parameters():
             if p.dim() > 1:
                 torch.nn.init.xavier_uniform_(p)
@@ -90,8 +96,10 @@ class NeuralLPCFG(nn.Module):
             head_scores = head_score.reshape(b, n, self.NT, self.NT_T, 2)
             left_scores = left_rule_scores.log_softmax(dim=-1)
             right_scores = right_rule_scores.log_softmax(dim=-2)
-            rule_scores = torch.stack([head_scores[:, :, :, :, 0].unsqueeze(4) + left_scores,
-                                       head_scores[:, :, :, :, 1].unsqueeze(3) + right_scores], dim=1)
+            rule_scores = torch.stack([
+                head_scores[:, :, :, :, 0].unsqueeze(4) + left_scores,
+                head_scores[:, :, :, :, 1].unsqueeze(3) + right_scores,
+            ], dim=1)
             return rule_scores
 
         root, unary, rule = roots(), terms(), rules()
@@ -112,10 +120,12 @@ class NeuralLPCFG(nn.Module):
             }
 
         else:
-            return {'unary': unary,
-                    'root': root,
-                    'rule': rule,
-                    'kl': torch.tensor(0)}
+            return {
+                'unary': unary,
+                'root': root,
+                'rule': rule,
+                'kl': torch.tensor(0),
+            }
 
     def loss(self, input):
         rules = self.forward(input)
