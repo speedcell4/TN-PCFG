@@ -19,9 +19,10 @@ __all__ = [
 ]
 
 import inspect
+from collections import defaultdict
+
 import torch
 import torch.nn.functional as F
-from collections import defaultdict
 
 from .utils import _build_args
 from .utils import _check_arg_dict_list

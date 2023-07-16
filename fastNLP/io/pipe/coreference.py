@@ -5,6 +5,7 @@ __all__ = [
 ]
 
 import collections
+
 import numpy as np
 
 from fastNLP.core.vocabulary import Vocabulary

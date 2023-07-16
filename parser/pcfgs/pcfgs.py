@@ -5,9 +5,8 @@ from parser.pcfgs.fn import diagonal_copy_
 from parser.pcfgs.fn import stripe
 
 
-class PCFG_base():
-
-    def _inside(self):
+class PCFGBase(object):
+    def _inside(self, *args, **kwargs):
         raise NotImplementedError
 
     def inside(self, rules, lens):

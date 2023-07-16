@@ -4,8 +4,9 @@ __all__ = [
     "Predictor"
 ]
 
-import torch
 from collections import defaultdict
+
+import torch
 
 from . import DataSet
 from . import DataSetIter

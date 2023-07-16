@@ -6,11 +6,12 @@ __all__ = [
     "GraphParser"
 ]
 
+from collections import defaultdict
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from collections import defaultdict
 
 from .base_model import BaseModel
 from ..core.const import Const as C

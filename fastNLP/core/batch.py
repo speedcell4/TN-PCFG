@@ -10,13 +10,13 @@ __all__ = [
 
 import abc
 import atexit
-import numpy as np
-import torch
-import torch.utils.data
 from collections import defaultdict
 from numbers import Number
 
-from ._logger import logger
+import numpy as np
+import torch
+import torch.utils.data
+
 from .dataset import DataSet
 from .sampler import Sampler
 from .sampler import SequentialSampler

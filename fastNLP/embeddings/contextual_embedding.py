@@ -7,8 +7,9 @@ __all__ = [
     "ContextualEmbedding"
 ]
 
-import torch
 from abc import abstractmethod
+
+import torch
 
 from .embedding import TokenEmbedding
 from ..core import logger

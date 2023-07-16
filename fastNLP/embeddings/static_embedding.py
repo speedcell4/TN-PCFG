@@ -8,14 +8,15 @@ __all__ = [
 ]
 
 import json
-import numpy as np
 import os
-import torch
-import torch.nn as nn
 import warnings
 from collections import defaultdict
 from copy import deepcopy
 from typing import Union
+
+import numpy as np
+import torch
+import torch.nn as nn
 
 from .embedding import TokenEmbedding
 from ..core import logger

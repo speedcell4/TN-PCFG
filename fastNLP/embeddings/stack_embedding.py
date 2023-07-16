@@ -7,9 +7,10 @@ __all__ = [
     "StackEmbedding",
 ]
 
+from typing import List
+
 import torch
 from torch import nn as nn
-from typing import List
 
 from .embedding import TokenEmbedding
 

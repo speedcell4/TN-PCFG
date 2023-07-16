@@ -1,6 +1,7 @@
 r"""undocumented"""
-import numpy as np
 import os
+
+import numpy as np
 
 from .pipe import Pipe
 from .utils import _drop_empty_instance

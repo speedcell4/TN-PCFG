@@ -8,12 +8,13 @@ __all__ = [
     "GPT2WordPieceEncoder"
 ]
 
-import numpy as np
-import torch
 import warnings
 from collections import OrderedDict
 from functools import partial
 from itertools import chain
+
+import numpy as np
+import torch
 from torch import nn
 
 from .contextual_embedding import ContextualEmbedding

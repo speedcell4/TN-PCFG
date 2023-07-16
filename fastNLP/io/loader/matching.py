@@ -16,7 +16,6 @@ import warnings
 from typing import Dict
 from typing import Union
 
-from .csv import CSVLoader
 from .json import JsonLoader
 from .loader import Loader
 from .. import DataBundle

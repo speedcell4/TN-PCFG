@@ -8,9 +8,10 @@ __all__ = [
     "TokenEmbedding"
 ]
 
+from abc import abstractmethod
+
 import torch
 import torch.nn as nn
-from abc import abstractmethod
 
 from .utils import get_embeddings
 

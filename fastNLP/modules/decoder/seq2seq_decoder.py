@@ -1,10 +1,11 @@
 r"""undocumented"""
 import math
+from typing import Tuple
+from typing import Union
+
 import torch
 import torch.nn.functional as F
 from torch import nn
-from typing import Tuple
-from typing import Union
 
 from .seq2seq_state import LSTMState
 from .seq2seq_state import State

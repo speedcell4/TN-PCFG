@@ -8,10 +8,11 @@ __all__ = [
     "LSTMCharEmbedding"
 ]
 
+from typing import List
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import List
 
 from .embedding import TokenEmbedding
 from .static_embedding import StaticEmbedding

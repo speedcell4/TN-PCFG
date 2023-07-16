@@ -5,9 +5,10 @@ __all__ = [
     "allowed_transitions"
 ]
 
+from typing import Union
+
 import torch
 from torch import nn
-from typing import Union
 
 from ..utils import initial_parameter
 from ...core.metrics import _check_tag_vocab_and_encoding_type

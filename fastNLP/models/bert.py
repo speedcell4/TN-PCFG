@@ -31,8 +31,9 @@ __all__ = [
     "BertForQuestionAnswering"
 ]
 
-import torch
 import warnings
+
+import torch
 from torch import nn
 
 from .base_model import BaseModel

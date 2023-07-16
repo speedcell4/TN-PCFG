@@ -4,7 +4,6 @@ __all__ = [
     "ExtCNNDMLoader"
 ]
 
-import os
 from typing import Dict
 from typing import Union
 

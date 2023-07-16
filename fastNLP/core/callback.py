@@ -70,8 +70,9 @@ __all__ = [
 
 import os
 import sys
-import torch
 from copy import deepcopy
+
+import torch
 
 from .utils import _save_model
 

@@ -9,12 +9,13 @@ __all__ = [
 ]
 
 import json
-import numpy as np
 import os
-import torch
-import torch.nn as nn
 from functools import partial
 from itertools import chain
+
+import numpy as np
+import torch
+import torch.nn as nn
 
 from .contextual_embedding import ContextualEmbedding
 from ..core import logger

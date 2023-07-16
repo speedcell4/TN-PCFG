@@ -10,8 +10,9 @@ __all__ = [
 import itertools
 import json
 import os
-import regex as re
 from functools import lru_cache
+
+import regex as re
 
 from fastNLP.io.file_utils import _get_file_name_base_on_postfix
 from ...core import logger

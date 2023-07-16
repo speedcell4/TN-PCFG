@@ -10,8 +10,9 @@ __all__ = [
 import copy
 import json
 import math
-import numpy as np
 import os
+
+import numpy as np
 import torch
 from torch import nn
 

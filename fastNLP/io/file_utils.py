@@ -13,13 +13,14 @@ __all__ = [
 
 import os
 import re
-import requests
 import shutil
 import tempfile
 from pathlib import Path
+from urllib.parse import urlparse
+
+import requests
 from requests import HTTPError
 from tqdm import tqdm
-from urllib.parse import urlparse
 
 from ..core import logger
 

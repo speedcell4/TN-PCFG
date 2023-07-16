@@ -1,7 +1,6 @@
 import torch
 
 from .fn import *
-from .pcfgs import PCFG_base
 
 '''
 O(l^4m^2+l^3m^3) inference with Bilexicalized PCFGs using (Eisner and Satta, 1999) 
@@ -34,7 +33,7 @@ class EisnerSatta():
                     -1)
             if i < N - 2:
                 s_need_dad[:, i, i + 1, i + 1:], s_need_dad[:, i + 1, i, i + 1:] = (
-                rule[:, i, i + 1:, :, t_slice, nt_slice]).max(-2)
+                    rule[:, i, i + 1:, :, t_slice, nt_slice]).max(-2)
         LEFT = 0
         RIGHT = 1
         for w in range(2, N):

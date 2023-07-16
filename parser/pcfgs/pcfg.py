@@ -1,14 +1,12 @@
 import torch
 
 from parser.pcfgs.fn import checkpoint
-from parser.pcfgs.fn import diagonal
 from parser.pcfgs.fn import diagonal_copy_
 from parser.pcfgs.fn import stripe
-from parser.pcfgs.pcfgs import PCFG_base
+from parser.pcfgs.pcfgs import PCFGBase
 
 
-class PCFG(PCFG_base):
-
+class PCFG(PCFGBase):
     @torch.enable_grad()
     def _inside(self, rules, lens, viterbi=False, mbr=False):
         terms = rules['unary']
@@ -109,7 +107,7 @@ class PCFG(PCFG_base):
             return {'partition': logZ}
 
 
-class Faster_PCFG(PCFG_base):
+class Faster_PCFG(PCFGBase):
     @torch.enable_grad()
     def _inside(self, rules, lens, viterbi=False, mbr=False):
         assert viterbi == False

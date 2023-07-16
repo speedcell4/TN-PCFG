@@ -5,15 +5,14 @@ r"""
 2. 在命令行中，将 python your_script.py 替换为 python -m torch.distributed.launch --nproc_per_node=N your_script.py
 """
 import contextlib
-import logging
 import os
 import time
-import time
+from datetime import datetime
+
 import torch
 import torch.cuda
 import torch.distributed as dist
 import torch.optim
-from datetime import datetime
 from pkg_resources import parse_version
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.serialization import default_restore_location

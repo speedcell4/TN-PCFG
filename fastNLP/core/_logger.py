@@ -26,6 +26,7 @@ import logging.config
 import os
 import sys
 import warnings
+
 from torch import distributed as dist
 
 ROOT_NAME = 'fastNLP'

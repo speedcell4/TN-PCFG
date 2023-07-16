@@ -1,8 +1,9 @@
 import logging
 import os
 import time
-import torch
 from distutils.dir_util import copy_tree
+
+import torch
 
 from parser.model import CompoundPCFG
 from parser.model import FastNBLPCFG

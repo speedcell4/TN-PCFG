@@ -1,11 +1,12 @@
 r"""undocumented"""
 import math
+from typing import Tuple
+from typing import Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import LayerNorm
-from typing import Tuple
-from typing import Union
 
 from fastNLP.modules.attention import MultiHeadAttention
 from ...core.utils import seq_len_to_mask

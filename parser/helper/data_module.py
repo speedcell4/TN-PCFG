@@ -1,18 +1,16 @@
-import os
 import pickle
 import random
 from collections import defaultdict
+
 from torch.utils.data import Sampler
 
 from fastNLP.core.batch import DataSetIter
 from fastNLP.core.dataset import DataSet
-from fastNLP.core.sampler import BucketSampler
 from fastNLP.core.sampler import ConstantTokenNumSampler
 from fastNLP.core.vocabulary import Vocabulary
-from fastNLP.embeddings import StaticEmbedding
 
 
-class DataModule():
+class DataModule(object):
     def __init__(self, hparams):
         super().__init__()
 
@@ -20,7 +18,7 @@ class DataModule():
         self.device = self.hparams.device
         self.setup()
 
-    def prepare_data(self):
+    def prepare_data(self) -> None:
         pass
 
     def setup(self):

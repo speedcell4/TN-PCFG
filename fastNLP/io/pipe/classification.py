@@ -14,8 +14,6 @@ __all__ = [
     "WeiboSenti100kPipe"
 ]
 
-import re
-import warnings
 from nltk import Tree
 
 from .pipe import Pipe
@@ -35,7 +33,6 @@ from ..loader.classification import THUCNewsLoader
 from ..loader.classification import WeiboSenti100kLoader
 from ..loader.classification import YelpFullLoader
 from ..loader.classification import YelpPolarityLoader
-from ...core._logger import logger
 from ...core.const import Const
 from ...core.dataset import DataSet
 from ...core.instance import Instance

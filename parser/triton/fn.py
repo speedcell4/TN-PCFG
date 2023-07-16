@@ -1,4 +1,3 @@
-import pdb
 import torch
 import triton
 import triton.language as tl
@@ -90,7 +89,7 @@ def _kernel_bwd_merge(
 
     l_bwd_ptr = alpha_c + b_idx * stride_alpha_c1 + (start + 1) * stride_alpha_c2 + (start) * stride_alpha_c3 + offset_r
     r_bwd_ptr = alpha_c + b_idx * stride_alpha_c1 + (end) * stride_alpha_c2 + (
-                start + 1) * stride_alpha_c3 + r + offset_r
+            start + 1) * stride_alpha_c3 + r + offset_r
 
     l_ptr = alpha_c + b_idx * stride_alpha_c1 + (start) * stride_alpha_c2 + (start + 1) * stride_alpha_c3 + offset_r
     r_ptr = alpha_c + b_idx * stride_alpha_c1 + (start + 1) * stride_alpha_c2 + (end) * stride_alpha_c3 + r + offset_r

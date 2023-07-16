@@ -6,9 +6,10 @@ __all__ = [
     'SequenceGenerator'
 ]
 
+from functools import partial
+
 import torch
 import torch.nn.functional as F
-from functools import partial
 
 from ..decoder.seq2seq_decoder import Seq2SeqDecoder
 from ..decoder.seq2seq_decoder import State

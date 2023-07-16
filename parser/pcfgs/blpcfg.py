@@ -1,11 +1,10 @@
 import torch
 
-from .eisner_satta import EisnerSatta
 from .fn import *
-from .pcfgs import PCFG_base
+from .pcfgs import PCFGBase
 
 
-class FastBLPCFG(PCFG_base):
+class FastBLPCFG(PCFGBase):
     def __init__(self):
         super(FastBLPCFG, self).__init__()
 
@@ -394,7 +393,7 @@ class Operation1(torch.autograd.Function):
         return grad_left, grad_right, grad_closed_left, grad_closed_right
 
 
-class BLPCFG(PCFG_base):
+class BLPCFG(PCFGBase):
 
     @torch.enable_grad()
     def _inside(self, rules, lens, decoding=False):

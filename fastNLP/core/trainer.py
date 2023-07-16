@@ -321,13 +321,14 @@ __all__ = [
     "Trainer"
 ]
 
-import numpy as np
 import os
 import time
-import torch
-import torch.nn as nn
 from datetime import datetime
 from datetime import timedelta
+
+import numpy as np
+import torch
+import torch.nn as nn
 
 try:
     from tqdm.auto import tqdm

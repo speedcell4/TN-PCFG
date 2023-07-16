@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import torch
-from collections import Counter
-from collections import defaultdict
 
 
 class Metric(object):
@@ -135,7 +133,8 @@ class UAS(Metric):
                 self.total += 1.
 
     def __repr__(self):
-        return f'UDAS: {self.score}, UUAS:{self.undirect_correct / self.total}, ' \
+        return f'UDAS: {self.score}, ' \
+               f'UUAS:{self.undirect_correct / self.total}, ' \
                f'root:{self.correct_root / self.total_sentence} '
 
 

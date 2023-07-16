@@ -10,16 +10,16 @@ __all__ = [
 
 import _pickle
 import inspect
-import numpy as np
 import os
-import torch
-import torch.nn as nn
 import warnings
 from collections import Counter
 from collections import namedtuple
-from copy import deepcopy
-from prettytable import PrettyTable
 from typing import List
+
+import numpy as np
+import torch
+import torch.nn as nn
+from prettytable import PrettyTable
 
 from ._logger import logger
 from ._parallel_utils import _model_contains_inner_module

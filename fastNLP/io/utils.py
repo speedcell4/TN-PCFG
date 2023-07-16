@@ -12,8 +12,6 @@ from pathlib import Path
 from typing import Dict
 from typing import Union
 
-from ..core import logger
-
 
 def check_loader_paths(paths: Union[str, Dict[str, str]]) -> Dict[str, str]:
     r"""

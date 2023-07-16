@@ -9,13 +9,14 @@ __all__ = [
     "EngChar2DPadder",
 ]
 
-import numpy as np
-import torch
 from abc import abstractmethod
 from collections import Counter
 from copy import deepcopy
 from numbers import Number
 from typing import Any
+
+import numpy as np
+import torch
 
 from ._logger import logger
 from .utils import _is_iterable

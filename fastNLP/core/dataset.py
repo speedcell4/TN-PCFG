@@ -357,8 +357,9 @@ __all__ = [
 ]
 
 import _pickle as pickle
-import numpy as np
 from copy import deepcopy
+
+import numpy as np
 from prettytable import PrettyTable
 
 from ._logger import logger

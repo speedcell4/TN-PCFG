@@ -10,8 +10,9 @@ __all__ = [
     "ConstantTokenNumSampler"
 ]
 
-import numpy as np
 from itertools import chain
+
+import numpy as np
 
 
 class Sampler(object):

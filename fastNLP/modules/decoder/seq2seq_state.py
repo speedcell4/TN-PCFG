@@ -9,8 +9,9 @@ __all__ = [
     "TransformerState"
 ]
 
-import torch
 from typing import Union
+
+import torch
 
 
 class State:

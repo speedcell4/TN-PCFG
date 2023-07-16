@@ -4,15 +4,15 @@ r"""undocumented
 
 __all__ = []
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn.utils.rnn import PackedSequence
-from torch.nn.utils.rnn import pad_packed_sequence
 from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Tuple
+
+import torch
+import torch.nn as nn
+from torch.nn.utils.rnn import PackedSequence
+from torch.nn.utils.rnn import pad_packed_sequence
 
 from ..utils import get_dropout_mask
 

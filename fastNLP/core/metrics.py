@@ -12,14 +12,15 @@ __all__ = [
 ]
 
 import inspect
-import numpy as np
 import re
-import torch
 import warnings
 from abc import abstractmethod
 from collections import defaultdict
 from copy import deepcopy
 from typing import Union
+
+import numpy as np
+import torch
 
 from .utils import _build_args
 from .utils import _check_arg_dict_list

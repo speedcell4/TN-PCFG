@@ -8,9 +8,10 @@ __all__ = [
 ]
 
 import logging
-import numpy as np
 import os
 import warnings
+
+import numpy as np
 
 from ..core.utils import Option
 from ..core.vocabulary import Vocabulary

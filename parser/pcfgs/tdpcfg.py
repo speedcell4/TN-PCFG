@@ -1,16 +1,15 @@
-import pdb
 import torch
 
 from parser.pcfgs.fn import checkpoint
 from parser.pcfgs.fn import diagonal
 from parser.pcfgs.fn import diagonal_copy_
 from parser.pcfgs.fn import stripe
-from parser.pcfgs.pcfgs import PCFG_base
+from parser.pcfgs.pcfgs import PCFGBase
 from parser.triton.fn import _log_then_diagonal_copy_
 from parser.triton.fn import _merge
 
 
-class TDPCFG(PCFG_base):
+class TDPCFG(PCFGBase):
     def __init__(self):
         super(TDPCFG, self).__init__()
 
@@ -117,7 +116,7 @@ class TDPCFG(PCFG_base):
             }
 
 
-class Fastest_TDPCFG(PCFG_base):
+class Fastest_TDPCFG(PCFGBase):
     def __init__(self):
         super(Fastest_TDPCFG, self).__init__()
 
@@ -235,7 +234,7 @@ class Fastest_TDPCFG(PCFG_base):
             }
 
 
-class Triton_TDPCFG(PCFG_base):
+class Triton_TDPCFG(PCFGBase):
     def __init__(self):
         super(Triton_TDPCFG, self).__init__()
 

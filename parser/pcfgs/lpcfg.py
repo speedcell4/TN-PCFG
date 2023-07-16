@@ -1,7 +1,7 @@
 import torch
 from torch.utils.checkpoint import checkpoint as ckp
 
-from parser.pcfgs.pcfgs import PCFG_base
+from parser.pcfgs.pcfgs import PCFGBase
 
 '''
 Refactor this file would kill me. It can run anyway.
@@ -9,7 +9,7 @@ This is a reimplementation of the inside algorithm of (Zhu et al 2020)
 '''
 
 
-class L_PCFG(PCFG_base):
+class L_PCFG(PCFGBase):
     def __init__(self):
         super(L_PCFG, self).__init__()
 
@@ -317,7 +317,6 @@ class L_PCFG(PCFG_base):
 
 
 class lexicalizedPCFG(torch.autograd.Function):
-
     @staticmethod
     def forward(ctx, unary, rule, root):
         root = root.squeeze(1)

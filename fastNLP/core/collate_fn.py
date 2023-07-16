@@ -1,8 +1,8 @@
 r"""undocumented"""
+from copy import deepcopy
+
 import numpy as np
 import torch
-from builtins import sorted
-from copy import deepcopy
 
 from .field import _get_ele_type_and_dim
 from .utils import logger

@@ -8,10 +8,11 @@ __all__ = [
     "summary"
 ]
 
+from functools import reduce
+
 import torch
 import torch.nn as nn
 import torch.nn.init as init
-from functools import reduce
 
 
 def initial_parameter(net, initial_method=None):
